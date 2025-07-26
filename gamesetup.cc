@@ -135,29 +135,17 @@ const GameSetupConfig& GameSetup::getConfig() const {
 }
 
 bool GameSetup::initializeGame(GameModel& model) const {
-    // This method would be called after the GameModel constructor
-    // to set up players with their specific abilities and links
+    // initialize players with abilities and links
+    model.initializePlayers(config.player1Abilities, config.player2Abilities, config.player1Links, config.player2Links);
+    model.placeLinksOnBoard();
     
-    // For now, this is a placeholder - you'll need to implement
-    // the actual player setup once the Player class is fully implemented
+    std::cout << "Game initialized successfully!\n";
+    std::cout << "Player 1 abilities: " << config.player1Abilities << "\n";
+    std::cout << "Player 2 abilities: " << config.player2Abilities << "\n";
     
-    cout << "Initializing game with:\n";
-    cout << "Player 1 abilities: " << config.player1Abilities << "\n";
-    cout << "Player 2 abilities: " << config.player2Abilities << "\n";
-    
-    cout << "Player 1 links: ";
-    for (const auto& link : config.player1Links) {
-        cout << link << " ";
+    if (config.graphicsEnabled) {
+        std::cout << "Graphics mode enabled.\n";
     }
-    cout << "\n";
-    
-    cout << "Player 2 links: ";
-    for (const auto& link : config.player2Links) {
-        cout << link << " ";
-    }
-    cout << "\n";
-    
-    cout << "Graphics enabled: " << (config.graphicsEnabled ? "Yes" : "No") << "\n";
     
     return true;
 }

@@ -7,6 +7,8 @@
 #include "subject.h"
 #include "changeevent.h"
 
+using namespace std; 
+
 class GameModel : public Subject
 {
 private:
@@ -18,15 +20,26 @@ private:
 public:
     GameModel();
     ~GameModel();
+
+    //game setup
+    void initializePlayers(const string& p1Abilities, const string& p2Abilities, const vector<string>& p1Links, const vector<string>& p2Links);
+    void placeLinksOnBoard();
+
+    //game actions
     void moveLink(char id, int dir);
     void useAbility(int playerID, int abilityID, int target);
 
+    //observer management
     void addObserver(Observer *observer);
     void removeObserver(Observer *observer);
-
     void notify(ChangeEvent event);
-    bool isGameOver();
 
+    //game state
+    bool isGameOver();
+    Player* getPlayer(int playerId) const;
+    Player* getCurrentPlayer() const;
+
+    //accessors
     Board &getBoard();
     const Board &getBoard() const;
     int getCurrentTurn() const;

@@ -37,13 +37,12 @@ public:
     //game state
     bool isGameOver();
     Player* getPlayer(int playerId) const;
-    Player* getCurrentPlayer() const;
 
     //accessors
     Board &getBoard();
     const Board &getBoard() const;
     int getCurrentTurn() const;
-    Player* getCurrentPlayer();
+    Player* getCurrentPlayer() const;
 };
 
 #endif

@@ -24,7 +24,7 @@ Cell &Board::at(int row, int col)
     return cells[row][col];
 }
 
-//for const board (re-use Oout of bounds logic from above)
+//for const board (re-use out of bounds logic from above)
 const Cell &Board::at(int row, int col) const
 {
     return const_cast<Board *>(this)->at(row, col);

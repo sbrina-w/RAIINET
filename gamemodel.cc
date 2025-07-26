@@ -93,6 +93,10 @@ bool GameModel::isGameOver()
     return false;
 }
 
+void GameModel::nextTurn() {
+    ++currentTurn;
+}
+
 void GameModel::moveLink(char /*id*/, int /*dir*/)
 {
     // TODO: implement movement

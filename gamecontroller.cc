@@ -81,6 +81,9 @@ void GameController::handleMove(char linkId, const std::string& direction) {
     try {
         model.moveLink(linkId, dir);
         std::cout << "Moved link " << linkId << " " << direction << "\n";
+        // moveLink(...) already triggers the LinkMoved changeevent, calling TurnEnded would double printing
+        // increment turn counter
+        model.nextTurn();
     } catch (const std::exception& e) {
         std::cout << "Error moving link: " << e.what() << "\n";
     }
@@ -100,7 +103,7 @@ void GameController::handleAbility(int abilityId) {
 }
 
 void GameController::handleBoard() {
-    model.notify(ChangeEvent::TurnEnded);
+    model.notify(ChangeEvent::PrintBoard);
 }
 
 void GameController::handleSequence(const std::string& filename) {

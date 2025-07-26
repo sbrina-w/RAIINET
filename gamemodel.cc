@@ -110,10 +110,6 @@ void GameModel::nextTurn() {
     ++currentTurn;
 }
 
-void GameModel::nextTurn() {
-    ++currentTurn;
-}
-
 void GameModel::moveLink(char id, int dir)
 {
     Player *curr = getCurrentPlayer();

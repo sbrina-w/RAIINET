@@ -3,6 +3,7 @@
 
 enum class ChangeEvent {
     GameStart,
+    PrintBoard,
     LinkMoved,
     AbilityUsed,
     DownloadOccurred,

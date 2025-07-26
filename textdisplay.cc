@@ -15,6 +15,7 @@ void TextDisplay::notify(GameModel &model, ChangeEvent event)
     switch (event)
     {
     case ChangeEvent::GameStart:
+    case ChangeEvent::PrintBoard:
     case ChangeEvent::LinkMoved:
     case ChangeEvent::DownloadOccurred:
     case ChangeEvent::AbilityUsed:

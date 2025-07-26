@@ -3,9 +3,13 @@
 
 #include "observer.h"
 
-class TextDisplay : public Observer {
+class TextDisplay : public Observer
+{
+    int viewerId;
+
 public:
-    void notify(GameModel& model, ChangeEvent event) override;
+    explicit TextDisplay(int viewerId): viewerId(viewerId) {}
+    void notify(GameModel &model, ChangeEvent event) override;
 };
 
 #endif

@@ -14,12 +14,13 @@ private:
 
 public:
     Cell();
-    CellType getCellType();
+    CellType getCellType() const;
     void setCellType(CellType type);
-    Player* getFirewallOwner();
+    Player* getFirewallOwner() const;
     void setFirewallOwner(Player* owner);
-    Link* getLink();
+    Link* getLink() const;
     void setLink(Link* link);
+    void removeLink();
 };
 
 #endif

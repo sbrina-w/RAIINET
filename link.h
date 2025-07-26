@@ -3,19 +3,31 @@
 
 #include "linktype.h"
 
-class Link {
+class Player;
+
+class Link
+{
 private:
+    char id; // a-h or A - H
     LinkType linkType;
-    bool isBoosted;
+    bool boosted;
     int strength;
+    bool revealed;
+    Player *owner;
 
 public:
-    Link();
-    int getStrength();
-    LinkType getType();
+    Link(char id, LinkType type, int strength, Player *owner);
+
+    char getId() const;
+    int getStrength() const;
+    LinkType getType() const;
+    bool isBoosted() const;
+    bool isRevealed() const;
+    Player *getOwner() const;
+
     void reveal();
     void switchType();
-    bool getBoostedStatus();
+    void setBoosted(bool b);
 };
 
 #endif

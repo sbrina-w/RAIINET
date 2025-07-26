@@ -4,6 +4,6 @@
 enum class LinkType {
     Data,
     Virus
-};
+};  
 
 #endif

@@ -30,7 +30,6 @@ public:
     GameSetup();
     bool parseCommandLine(int argc, char* argv[]);
     const GameSetupConfig& getConfig() const;
-    void printUsage(const std::string& programName) const;
     bool initializeGame(class GameModel& model) const;
 };
 

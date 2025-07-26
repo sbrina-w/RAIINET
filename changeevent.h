@@ -2,6 +2,7 @@
 #define CHANGEEVENT_H
 
 enum class ChangeEvent {
+    GameStart,
     LinkMoved,
     AbilityUsed,
     DownloadOccurred,

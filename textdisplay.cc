@@ -14,6 +14,7 @@ void TextDisplay::notify(GameModel &model, ChangeEvent event)
     // Redraw on any board‐changing or turn‐ending event
     switch (event)
     {
+    case ChangeEvent::GameStart:
     case ChangeEvent::LinkMoved:
     case ChangeEvent::DownloadOccurred:
     case ChangeEvent::AbilityUsed:

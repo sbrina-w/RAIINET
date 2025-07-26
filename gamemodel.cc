@@ -109,10 +109,6 @@ Player* GameModel::getPlayer(int playerId) const {
     return nullptr;
 }
 
-Player* GameModel::getCurrentPlayer() const {
-    return getPlayer(currentTurn);
-}
-
 void GameModel::useAbility(int /*playerID*/, int /*abilityID*/, int /*target*/)
 {
     // TODO: implement abilities
@@ -148,4 +144,8 @@ const Board &GameModel::getBoard() const
 int GameModel::getCurrentTurn() const
 {
     return currentTurn;
+}
+
+Player* GameModel::getCurrentPlayer() const {
+    return players[(currentTurn - 1) % players.size()];
 }

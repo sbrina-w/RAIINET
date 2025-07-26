@@ -14,7 +14,8 @@ class GameModel : public Subject
 private:
     Board board;
     std::vector<Player *> players;
-    int currentTurn; // between 1 and 2
+    // continuously incremented, mod by number of players to get cur player
+    int currentTurn; 
 
 public:
     GameModel();
@@ -36,12 +37,12 @@ public:
     //game state
     bool isGameOver();
     Player* getPlayer(int playerId) const;
-    Player* getCurrentPlayer() const;
 
     //accessors
     Board &getBoard();
     const Board &getBoard() const;
     int getCurrentTurn() const;
+    Player* getCurrentPlayer() const;
 };
 
 #endif

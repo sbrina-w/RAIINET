@@ -64,3 +64,7 @@ int GameModel::getCurrentTurn() const
 {
     return currentTurn;
 }
+
+Player* GameModel::getCurrentPlayer() {
+    return players[(currentTurn - 1) % players.size()];
+}

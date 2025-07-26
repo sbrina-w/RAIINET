@@ -12,7 +12,8 @@ class GameModel : public Subject
 private:
     Board board;
     std::vector<Player *> players;
-    int currentTurn; // between 1 and 2
+    // continuously incremented, mod by number of players to get cur player
+    int currentTurn; 
 
 public:
     GameModel();
@@ -29,6 +30,7 @@ public:
     Board &getBoard();
     const Board &getBoard() const;
     int getCurrentTurn() const;
+    Player* getCurrentPlayer();
 };
 
 #endif

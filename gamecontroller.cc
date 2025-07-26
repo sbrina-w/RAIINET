@@ -9,7 +9,7 @@ void GameController::play() {
     std::string line;
     std::cout << "\nRAIInet Game Started!\n";
     std::cout << "Available commands: move, abilities, ability, board, sequence, quit\n";
-    std::cout << "Player " << model.getCurrentTurn() << "'s turn> ";
+    std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn> ";    
     
     while (std::getline(std::cin, line)) {
         std::istringstream iss(line);
@@ -58,7 +58,7 @@ void GameController::play() {
         }
         
         if (!model.isGameOver()) {
-            std::cout << "Player " << model.getCurrentTurn() << "'s turn> ";
+            std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn> ";
         } else {
             std::cout << "Game Over!\n";
             break;
@@ -92,7 +92,7 @@ void GameController::handleAbilities() {
 
 void GameController::handleAbility(int abilityId) {
     try {
-        model.useAbility(model.getCurrentTurn(), abilityId, 0);
+        model.useAbility(model.getCurrentPlayer()->getId(), abilityId, 0);
         std::cout << "Used ability " << abilityId << "\n";
     } catch (const std::exception& e) {
         std::cout << "Error using ability: " << e.what() << "\n";

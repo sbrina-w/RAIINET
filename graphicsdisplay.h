@@ -1,13 +1,19 @@
 #ifndef GRAPHICSDISPLAY_H
 #define GRAPHICSDISPLAY_H
 
+#include <vector>
+#include "celltype.h"
 #include "observer.h"
 #include "xwindow.h"
+
+using namespace std;
 
 class GraphicsDisplay : public Observer {
 private:
     Xwindow* window;
     int viewerId;
+    //track current drawn
+    vector<vector<char>> lastSnapshot;
 
     //layout
     static const int CELL_SIZE = 60;
@@ -17,7 +23,8 @@ private:
     
     //drawing methods
     void drawBoard(class GameModel& model);
-    void drawCell(int row, int col, char content, int color);
+    //redraw exactly one cell at (row,col)
+    void drawCell(int row, int col, GameModel& model);
     void drawPlayerInfo(class GameModel& model);
     void drawGrid();
     int getLinkColor(class Link* link, bool isRevealed, bool isOwner) const;

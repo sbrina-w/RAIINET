@@ -8,11 +8,15 @@
 #include "celltype.h"
 #include <iostream>
 #include <sstream>
+#include <vector>
+
+using namespace std; 
 
 GraphicsDisplay::GraphicsDisplay(int viewerId) : viewerId(viewerId) {
     int windowWidth = BOARD_OFFSET_X * 2 + CELL_SIZE * 8;
     int windowHeight = BOARD_OFFSET_Y * 2 + CELL_SIZE * 8 + INFO_PANEL_HEIGHT * 2;
     window = new Xwindow(windowWidth, windowHeight);
+    lastSnapshot.assign(8, vector<char>(8, '.'));
 }
 
 GraphicsDisplay::~GraphicsDisplay() {
@@ -23,8 +27,73 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
     //update view to current player
     setViewerId(model.getCurrentPlayer()->getId());
     switch (event) {
+        case ChangeEvent::GameStart:
+            //full draw at beginning of game
+            drawPlayerInfo(model);
+            drawGrid();
+            drawBoard(model);
+            //capture what is drawn
+            lastSnapshot = [&]() {
+                vector<vector<char>> snap(8, vector<char>(8, '.'));
+                const Board& b = model.getBoard();
+                Player* viewer = model.getPlayer(viewerId);
+                for (int r = 0; r < 8; r++){
+                    for (int c = 0; c < 8; c++) {
+                        const Cell& cell = b.at(r,c);
+                        char ch = '.';
+                        if (cell.getCellType() == CellType::ServerPort) ch = 'S';
+                        else if (cell.getLink()) {
+                            Link* L = cell.getLink();
+                            if (viewer->knowsOpponentLink(L->getId()) || L->isRevealed() || L->getOwner() == viewer) {
+                                ch = L->getId();
+                            } else {
+                                ch = '?';
+                            }
+                            snap[r][c] = ch;
+                        }
+                    }
+                }
+                return snap;
+            }();
+            window->flush();
+            break;
         case ChangeEvent::LinkMoved:
         case ChangeEvent::DownloadOccurred:
+            //update only info panel and changed cells
+            drawPlayerInfo(model);
+                {
+                // start with an empty board
+                std::vector<std::vector<char>> newSnap(8, std::vector<char>(8, '.'));
+                const Board& b = model.getBoard();
+                Player* viewer = model.getPlayer(viewerId);
+
+                for (int r = 0; r < 8; ++r) {
+                    for (int c = 0; c < 8; ++c) {
+                        char ch = '.';
+                        const Cell& cell = b.at(r, c);
+                        if (cell.getCellType() == CellType::ServerPort) {
+                            ch = 'S';
+                        } else if (cell.getLink()) {
+                            Link* L = cell.getLink();
+                            if (viewer->knowsOpponentLink(L->getId())
+                            || L->isRevealed() || L->getOwner() == viewer)
+                                ch = L->getId();
+                            else
+                                ch = '?';
+                        }
+
+                        // if it differs from what was on‐screen, repaint
+                        if (ch != lastSnapshot[r][c]) {
+                            drawCell(r, c, model);
+                        }
+                        newSnap[r][c] = ch;
+                    }
+                }
+
+                lastSnapshot.swap(newSnap);
+            }
+            window->flush();
+            break;
         case ChangeEvent::AbilityUsed:
         case ChangeEvent::TurnEnded:
             window->clear();
@@ -136,6 +205,45 @@ void GraphicsDisplay::drawGrid() {
         int y = BOARD_OFFSET_Y + i * CELL_SIZE;
         window->drawLine(BOARD_OFFSET_X, y, BOARD_OFFSET_X + 8 * CELL_SIZE, y, Xwindow::Black);
     }
+}
+
+void GraphicsDisplay::drawCell(int row, int col, GameModel& model) {
+    const Board& board = model.getBoard();
+    const Cell& cell = board.at(row, col);
+    int x = BOARD_OFFSET_X + col * CELL_SIZE;
+    int y = BOARD_OFFSET_Y + row * CELL_SIZE;
+
+    //clear cell interior 
+    window->fillRectangle(x+1, y+1, CELL_SIZE-2, CELL_SIZE-2, Xwindow::White);
+    //redraw grid lines
+    window->drawLine(x, y, x + CELL_SIZE, y, Xwindow::Black);
+    window->drawLine(x, y, x, y + CELL_SIZE, Xwindow::Black);
+    window->drawLine(x + CELL_SIZE, y, x + CELL_SIZE, y + CELL_SIZE, Xwindow::Black);
+    window->drawLine(x, y + CELL_SIZE, x + CELL_SIZE, y + CELL_SIZE, Xwindow::Black);
+
+    //draw port or link or firewall just for this cell
+    if (cell.getCellType() == CellType::ServerPort) {
+        window->fillRectangle(x+5, y+5, CELL_SIZE-10, CELL_SIZE-10, Xwindow::Blue);
+        window->drawString(x + CELL_SIZE/2 - 5, y + CELL_SIZE/2 + 5, "S", Xwindow::White);
+    }
+    else if (cell.getLink()) {
+        Link* link = cell.getLink();
+        bool isOwner   = link->getOwner()->getId() == viewerId;
+        bool isRevealed= link->isRevealed() || isOwner;
+        int bg = getLinkColor(link, isRevealed, isOwner);
+        window->fillRectangle(x+5, y+5, CELL_SIZE-10, CELL_SIZE-10, bg);
+        std::string id(1, link->getId());
+        window->drawString(x + CELL_SIZE/2 - 5, y + CELL_SIZE/2 + 5, id, Xwindow::White);
+    }
+    if (cell.getCellType() == CellType::Firewall) {
+        Player* owner = cell.getFirewallOwner();
+        if (owner) {
+            char f = owner->getId() == 1 ? 'm' : 'w';
+            std::string s(1, f);
+            window->drawString(x+5, y+CELL_SIZE-15, s, Xwindow::Red);
+        }
+    }
+
 }
 
 void GraphicsDisplay::drawBoard(GameModel& model) {

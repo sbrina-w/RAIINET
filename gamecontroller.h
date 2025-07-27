@@ -8,11 +8,14 @@
 class GameController {
 private:
     GameModel& model;
+
+    // helper functions
+    static std::string abilityFullName(char id);
     
     //command handling methods
     void handleMove(char linkId, const std::string& direction);
     void handleAbilities();
-    void handleAbility(int abilityId);
+    void handleAbility(int abilityId, const std::vector<std::string>& args);
     void handleBoard();
     void handleSequence(const std::string& filename);
 

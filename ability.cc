@@ -2,10 +2,14 @@
 
 Ability::Ability(char id) : used(false), abilityID(id) {}
 
-bool Ability::isUsed() {
+bool Ability::isUsed() const {
     return used;
 }
 
-char Ability::getID() {
+char Ability::getID() const {
     return abilityID;
+}
+
+void Ability::markUsed() {
+    used = true;
 }

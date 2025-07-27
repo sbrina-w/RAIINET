@@ -11,12 +11,15 @@ private:
     bool used;
     char abilityID;
 
+protected:
+    void markUsed();
+
 public:
     Ability(char id);
     virtual ~Ability() = default;
     virtual void execute(GameModel& model, std::vector<std::string> args) = 0;
-    bool isUsed();
-    char getID();
+    bool isUsed() const;
+    char getID() const;
 };
 
 #endif

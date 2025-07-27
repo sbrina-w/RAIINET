@@ -255,10 +255,17 @@ Player *GameModel::getPlayer(int playerId) const
     return nullptr;
 }
 
-void GameModel::useAbility(int /*playerID*/, int /*abilityID*/, int /*target*/)
-{
-    // TODO: implement abilities
-    // …
+void GameModel::useAbility(int playerID, int abilityID, const std::vector<std::string>& args) {
+    Player* player = getPlayer(playerID);
+    if (!player) throw std::runtime_error("useAbility: Invalid player ID");
+
+    const auto& abilities = player->getAbilities();
+    if (abilityID < 1 || abilityID > static_cast<int>(abilities.size()))
+        throw std::invalid_argument("useAbility: Invalid ability index, must be between 1-5.");
+
+    Ability* ability = abilities.at(abilityID - 1);
+    ability->execute(*this, args);
+
     notifyObservers(ChangeEvent::AbilityUsed);
 }
 

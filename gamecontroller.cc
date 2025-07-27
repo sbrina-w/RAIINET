@@ -9,7 +9,7 @@ void GameController::play() {
     std::string line;
     std::cout << "\nRAIInet Game Started!\n";
     std::cout << "Available commands: move, abilities, ability, board, sequence, quit\n";
-    std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn> ";    
+    std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn > ";    
     
     while (std::getline(std::cin, line)) {
         std::istringstream iss(line);
@@ -35,8 +35,13 @@ void GameController::play() {
         else if (command == "ability") {
             int abilityId;
             if (iss >> abilityId) {
-                //todo: parse additional parameters for abilities that need them
-                handleAbility(abilityId);
+                // Parse additional parameters for abilities that need them
+                std::vector<std::string> args;
+                std::string arg;
+                while (iss >> arg) {
+                    args.push_back(arg);
+                }
+                handleAbility(abilityId, args);
             } else {
                 std::cout << "Usage: ability <id> [additional parameters]\n";
             }
@@ -58,7 +63,8 @@ void GameController::play() {
         }
         
         if (!model.isGameOver()) {
-            std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn> ";
+            std::cout << "Available commands: move, abilities, ability, board, sequence, quit\n";
+            std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn > ";
         } else {
             std::cout << "Game Over!\n";
             break;
@@ -89,14 +95,39 @@ void GameController::handleMove(char linkId, const std::string& direction) {
     }
 }
 
-void GameController::handleAbilities() {
-    //todo: Show actual ability status from player
+std::string GameController::abilityFullName(char id) {
+    switch (id) {
+        case 'L': return "LinkBoost";
+        case 'F': return "Firewall";
+        case 'D': return "Download";
+        case 'S': return "Scan";
+        case 'P': return "Polarize";
+        case 'E': return "Exchange";
+        case 'G': return "GoLater";
+        case 'H': return "Hijack";
+        default:  return "Unknown";
+    }
 }
 
-void GameController::handleAbility(int abilityId) {
+void GameController::handleAbilities() {
+    Player* player = model.getCurrentPlayer();
+    if (!player) {
+        std::cout << "Error: No current player.\n";
+        return;
+    }
+    const auto& abilities = player->getAbilities();
+    std::cout << "Abilities for Player " << player->getId() << ":\n";
+    for (size_t i = 0; i < abilities.size(); ++i) {
+        const Ability* ability = abilities[i];
+        std::string status = ability->isUsed() ? "(used)" : "(not used)";
+        std::cout << "  " << (i+1) << ". " << abilityFullName(ability->getID()) << " " << status << "\n";
+    }
+}
+
+void GameController::handleAbility(int abilityId, const std::vector<std::string>& args) {
     try {
-        model.useAbility(model.getCurrentPlayer()->getId(), abilityId, 0);
-        std::cout << "Used ability " << abilityId << "\n";
+        model.useAbility(model.getCurrentPlayer()->getId(), abilityId, args);
+        std::cout << "Player " << model.getCurrentPlayer()->getId() << " Used ability " << abilityId << "\n";
     } catch (const std::exception& e) {
         std::cout << "Error using ability: " << e.what() << "\n";
     }
@@ -134,7 +165,15 @@ void GameController::handleSequence(const std::string& filename) {
         else if (command == "ability") {
             int abilityId;
             if (iss >> abilityId) {
-                handleAbility(abilityId);
+                // Parse additional parameters for abilities that need them
+                std::vector<std::string> args;
+                std::string arg;
+                while (iss >> arg) {
+                    args.push_back(arg);
+                }
+                handleAbility(abilityId, args);
+            } else {
+                std::cout << "Usage: ability <id> [additional parameters]\n";
             }
         }
         //todo: other commands

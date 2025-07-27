@@ -108,6 +108,7 @@ bool GameModel::isGameOver()
 
 void GameModel::nextTurn() {
     ++currentTurn;
+    getCurrentPlayer()->startTurn();
 }
 
 void GameModel::moveLink(char id, int dir)
@@ -255,16 +256,25 @@ Player *GameModel::getPlayer(int playerId) const
     return nullptr;
 }
 
-void GameModel::useAbility(int playerID, int abilityID, const std::vector<std::string>& args) {
-    Player* player = getPlayer(playerID);
-    if (!player) throw std::runtime_error("useAbility: Invalid player ID");
+void GameModel::useAbility(int abilityID, const std::vector<std::string>& args) {
+    Player* player = getCurrentPlayer();
+    if (!player) throw std::runtime_error("useAbility: getCurrentPlayer failed");
+
+    if (!player->canUseAbility()) {
+        throw std::runtime_error("You have already used all allowed abilities this turn.");
+    }
 
     const auto& abilities = player->getAbilities();
     if (abilityID < 1 || abilityID > static_cast<int>(abilities.size()))
         throw std::invalid_argument("useAbility: Invalid ability index, must be between 1-5.");
 
     Ability* ability = abilities.at(abilityID - 1);
+
+    if (ability->isUsed()) throw runtime_error("The ability in this slot has already been used.");
+
     ability->execute(*this, args);
+
+    player->incrementAbilitiesUsed();
 
     notifyObservers(ChangeEvent::AbilityUsed);
 }

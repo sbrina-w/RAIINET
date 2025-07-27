@@ -20,39 +20,42 @@ private:
     int abilitiesRemaining;
     int downloadedData;
     int downloadedVirus;
-    bool allowTwoAbilities;
+
+    // ability usage tracking
+    bool goLaterActive = false;
+    int abilitiesUsedThisTurn = 0;
+    int abilitiesAllowedThisTurn = 1;
 
 public:
     Player(int playerId);
     ~Player();
     
-    //getters
+    // getters
     int getId() const;
     int getDataDownloadCount() const;
     int getVirusDownloadCount() const;
     int getUnusedAbilityCount() const;
 
-    //for downloading:
+    // for downloading:
     void incrementDownload(LinkType t);
 
-    //link management
+    // link management
     void addLink(char linkId, Link* link);
     Link* getLink(char linkId) const;
     const std::map<char, Link*>& getLinks() const;
 
-    //opponent link knowledge
+    // opponent link knowledge
     void learnOpponentLink(char linkId, Link* link);
     Link* getKnownOpponentLink(char linkId) const;
     bool knowsOpponentLink(char linkId) const;
 
-    //ability management
+    // ability management
     void setAbilities(const std::string& abilityOrder);
-    
-    void playAbility(int abilityInd, int target);
-    void chooseAbility(const std::string& abilities);
-
-    // getter for abilities, use for debugging
-    const std::vector<Ability*>& getAbilities() const { return abilities; }
+    void incrementAbilitiesUsed();
+    bool canUseAbility() const;
+    void activateGoLater();
+    const std::vector<Ability*>& getAbilities() const;
+    void startTurn();
 };
 
 #endif

@@ -27,7 +27,7 @@ public:
 
     //game actions
     void moveLink(char id, int dir);
-    void useAbility(int playerID, int abilityID, const vector<string>& args);
+    void useAbility(int abilityID, const vector<string>& args);
 
     //observer management
     void addObserver(Observer *observer);

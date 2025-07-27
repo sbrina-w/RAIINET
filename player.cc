@@ -15,7 +15,7 @@ Player::Player(int playerId)
     abilitiesRemaining(5),
     downloadedData(0),
     downloadedVirus(0),
-    allowTwoAbilities(false)
+    goLaterActive(false)    
 {
     //initialize with default abilities
     setAbilities("LFDSP");
@@ -102,11 +102,24 @@ void Player::setAbilities(const std::string& abilityOrder) {
     }
 }
 
-void Player::playAbility(int abilityInd, int target) {
-    // stub for now
+void Player::incrementAbilitiesUsed() {
+    ++abilitiesUsedThisTurn;
 }
 
-//could remove?
-void Player::chooseAbility(const std::string& abilities) {
-    // stub for now
+bool Player::canUseAbility() const {
+    return abilitiesUsedThisTurn < abilitiesAllowedThisTurn;
+}
+
+void Player::activateGoLater() {
+    goLaterActive = true;
+}
+
+const std::vector<Ability*>& Player::getAbilities() const {
+    return abilities;
+}
+
+void Player::startTurn() {
+    abilitiesUsedThisTurn = 0;
+    abilitiesAllowedThisTurn = goLaterActive ? 2 : 1;
+    goLaterActive = false;
 }

@@ -63,7 +63,6 @@ void GameController::play() {
         }
         
         if (!model.isGameOver()) {
-            std::cout << "Available commands: move, abilities, ability, board, sequence, quit\n";
             std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn > ";
         } else {
             std::cout << "Game Over!\n";
@@ -126,7 +125,7 @@ void GameController::handleAbilities() {
 
 void GameController::handleAbility(int abilityId, const std::vector<std::string>& args) {
     try {
-        model.useAbility(model.getCurrentPlayer()->getId(), abilityId, args);
+        model.useAbility(abilityId, args);
         std::cout << "Player " << model.getCurrentPlayer()->getId() << " Used ability " << abilityId << "\n";
     } catch (const std::exception& e) {
         std::cout << "Error using ability: " << e.what() << "\n";

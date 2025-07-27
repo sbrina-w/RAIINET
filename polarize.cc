@@ -5,6 +5,8 @@
 #include <stdexcept>
 using namespace std;
 
+Polarize::Polarize() : Ability('P') {}
+
 // args[0]: link id (char, e.g. "A" or "a")
 // Usage: ability <N> <linkID>
 void Polarize::execute(GameModel& model, vector<string> args) {

@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include "ability.h"
 
 class Link;
 class Ability;
@@ -14,7 +15,7 @@ private:
     int id;
     std::map<char, Link *> links;
     std::map<char, Link *> opponentLinks;
-    std::vector<char> abilities;
+    std::vector<Ability*> abilities;
     int abilitiesRemaining;
     int downloadedData;
     int downloadedVirus;
@@ -45,6 +46,9 @@ public:
     
     void playAbility(int abilityInd, int target);
     void chooseAbility(const std::string& abilities);
+
+    // getter for abilities, use for debugging
+    const std::vector<Ability*>& getAbilities() const { return abilities; }
 };
 
 #endif

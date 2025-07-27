@@ -6,6 +6,8 @@
 #include <stdexcept>
 using namespace std;
 
+Scan::Scan() : Ability('S') {}
+
 // args[0]: link id (char, e.g. "A" or "a")
 // Usage: ability <N> <linkID>
 void Scan::execute(GameModel& model, vector<string> args) {

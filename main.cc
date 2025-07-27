@@ -45,8 +45,25 @@ int main(int argc, char *argv[])
         // return 1;
     }
 
+    // print statements to debug ability setup
+    for (int i = 1; i <= 2; ++i) {
+        Player* player = model.getPlayer(i);
+        if (!player) continue;
+        std::cout << "Player " << i << " abilities:\n";
+        // You may need to add a getter for the abilities vector if it's private
+        // For now, add this method to Player:
+        // const std::vector<Ability*>& getAbilities() const { return abilities; }
+        for (const auto& ability : player->getAbilities()) {
+            std::cout << "  ID: " << ability->getID()
+                      << " Used: " << (ability->isUsed() ? "yes" : "no") << "\n";
+        }
+    }
+
     // to draw the initial board
     model.notify(ChangeEvent::GameStart);
+
+
+    
 
     // 5) Enter game loop
     GameController controller(model);

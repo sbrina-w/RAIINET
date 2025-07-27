@@ -6,6 +6,8 @@
 #include <stdexcept>
 using namespace std;
 
+Exchange::Exchange() : Ability('E') {}
+
 // args[0]: link id 1 (char, e.g. "a")
 // args[1]: link id 2 (char, e.g. "b")
 // Usage: ability <N> <linkID1> <linkID2>

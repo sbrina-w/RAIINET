@@ -2,7 +2,9 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -g
 
 # List all your source files here
-SRCS = main.cc gamemodel.cc gamesetup.cc gamecontroller.cc board.cc cell.cc link.cc player.cc subject.cc textdisplay.cc
+SRCS = main.cc gamemodel.cc gamesetup.cc gamecontroller.cc board.cc cell.cc link.cc player.cc subject.cc textdisplay.cc \
+ability.cc linkboost.cc firewall.cc download.cc scan.cc polarize.cc exchange.cc golater.cc hijack.cc
+
 OBJS = $(SRCS:.cc=.o)
 
 # If you want to build the graphics-demo separately

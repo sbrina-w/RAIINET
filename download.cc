@@ -5,6 +5,8 @@
 #include <stdexcept>
 using namespace std;
 
+Download::Download() : Ability('D') {}
+
 // args[0]: link id (char, e.g. "A" or "a")
 // Usage: ability <N> <linkID>
 void Download::execute(GameModel& model, vector<string> args) {

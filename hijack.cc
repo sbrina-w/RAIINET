@@ -5,6 +5,8 @@
 #include <stdexcept>
 using namespace std;
 
+Hijack::Hijack() : Ability('H') {}
+
 // args[0]: link id (char, opponent's link, e.g. "A")
 // args[1]: direction (string, e.g. "up", "down", "left", "right")
 // Usage: ability <N> <linkID> <direction>

@@ -5,6 +5,8 @@
 #include <stdexcept>
 using namespace std;
 
+LinkBoost::LinkBoost() : Ability('L') {}
+
 // args[0]: link id (char, e.g. "a" or "A")
 // Usage: ability <N> <linkID>
 void LinkBoost::execute(GameModel& model, vector<string> args) {

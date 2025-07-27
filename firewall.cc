@@ -5,6 +5,8 @@
 #include <stdexcept>
 using namespace std;
 
+Firewall::Firewall() : Ability('F') {}
+
 // args[0]: row (string, needs to be converted to int)
 // args[1]: col (string, needs to be converted to int)
 // Usage: ability <N> <row> <col>

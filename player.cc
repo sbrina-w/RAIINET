@@ -1,5 +1,14 @@
 #include "player.h"
 #include "link.h"
+// include abilities
+#include "linkboost.h"
+#include "firewall.h"
+#include "download.h"
+#include "scan.h"
+#include "polarize.h"
+#include "exchange.h"
+#include "golater.h"
+#include "hijack.h"
 
 Player::Player(int playerId)
   : id(playerId),
@@ -13,10 +22,12 @@ Player::Player(int playerId)
 }
 
 Player::~Player() {
-    //clean up owned links
+    // clean up owned links
     for (auto& pair : links) {
         delete pair.second;
     }
+    // clean up abilities
+    for (Ability* a : abilities) delete a;
 }
 
 int Player::getId() const {
@@ -61,11 +72,25 @@ bool Player::knowsOpponentLink(char linkId) const {
     return opponentLinks.find(linkId) != opponentLinks.end();
 }
 
-//fix this later, change to vector of abilities?
 void Player::setAbilities(const std::string& abilityOrder) {
+    // Clean up old abilities if needed
+    for (Ability* a : abilities) delete a;
     abilities.clear();
-    for(char c : abilityOrder) {
-        abilities.push_back(c);
+
+    for (char c : abilityOrder) {
+        Ability* ability = nullptr;
+        switch (c) {
+            case 'L': ability = new LinkBoost(); break;
+            case 'F': ability = new Firewall(); break;
+            case 'D': ability = new Download(); break;
+            case 'S': ability = new Scan(); break;
+            case 'P': ability = new Polarize(); break;
+            case 'E': ability = new Exchange(); break;
+            case 'G': ability = new GoLater(); break;
+            case 'H': ability = new Hijack(); break;
+            default: break;
+        }
+        if (ability) abilities.push_back(ability);
     }
 }
 

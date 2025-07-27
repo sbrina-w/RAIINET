@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include "ability.h"
+#include "linktype.h"
 
 class Link;
 class Ability;
@@ -30,6 +31,9 @@ public:
     int getDataDownloadCount() const;
     int getVirusDownloadCount() const;
     int getUnusedAbilityCount() const;
+
+    //for downloading:
+    void incrementDownload(LinkType t);
 
     //link management
     void addLink(char linkId, Link* link);

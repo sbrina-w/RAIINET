@@ -147,13 +147,13 @@ void GameModel::moveLink(char id, int dir)
 
     // now check that the new row and column are allowable
 
-    // within x bounds
+    // check if outside x bounds
     if (newC < 0 || newC > 7)
     {
         throw std::invalid_argument("Cannot move off left/right edge");
     }
 
-    // within the y bounds:
+    // check if outside y bounds (either not allowed or downloading to be done)
     if (newR < 0 || newR > 7)
     {
         bool allowed = (newR < 0 && curr->getId() == 2) || (newR > 7 && curr->getId() == 1);
@@ -161,8 +161,9 @@ void GameModel::moveLink(char id, int dir)
         {
             throw std::invalid_argument("Cannot move off that edge");
         }
-        // TODO: perform download of your own link
-        // curr->incrementDownload(link->getType());
+
+        //downloading our own link (no need to reveal anything as we know our own link)
+        curr->incrementDownload(link->getType());
         board.at(oldR, oldC).removeLink();
         notifyObservers(ChangeEvent::DownloadOccurred);
         return;
@@ -170,6 +171,8 @@ void GameModel::moveLink(char id, int dir)
 
     // in bounds so check the cell currently there:
     Cell &dest = board.at(newR, newC);
+
+    //TODO: Handle firewall
 
     // for if destination is a server port
     if (dest.getCellType() == CellType::ServerPort)
@@ -180,8 +183,12 @@ void GameModel::moveLink(char id, int dir)
             throw std::invalid_argument("Cannot move onto your own server port");
         }
         // otherwise it *is* the opponent’s port → they download your link
+        // need to reveal to them what the link is too
         Player *opp = getPlayer(curr->getId() == 1 ? 2 : 1);
-        // TODO: opp->incrementDownload(link->getType());
+
+        link->reveal(); //makes the link revealed
+        opp->learnOpponentLink(link->getId(), link); //opponent gets to learn it
+        opp->incrementDownload(link->getType()); //then they increment their download count
         board.at(oldR, oldC).removeLink();
         notifyObservers(ChangeEvent::DownloadOccurred);
         return;
@@ -197,13 +204,23 @@ void GameModel::moveLink(char id, int dir)
     if (dest.getLink())
     {
         Link *other = dest.getLink();
+
+        //reveals both links
         link->reveal();
         other->reveal();
+
+        //both learn about the other's link
+        //we learn about theirs
+        curr->learnOpponentLink(other->getId(), other);
+
+        //they learn about us
+        Player *opp = other->getOwner();
+        opp->learnOpponentLink(link->getId(), link);
+
         if (link->getStrength() >= other->getStrength())
         {
             // current player wins so the opponent downloads
-            Player *opp = other->getOwner();
-            // opp->incrementDownload(other->getType());
+            opp->incrementDownload(other->getType());
             dest.removeLink();
             dest.setLink(link);
             board.at(oldR, oldC).removeLink();
@@ -212,7 +229,7 @@ void GameModel::moveLink(char id, int dir)
         else
         {
             // you lose ⇒ so you download
-            // TODO: curr->incrementDownload(link->getType());
+            curr->incrementDownload(link->getType());
             board.at(oldR, oldC).removeLink();
             notifyObservers(ChangeEvent::DownloadOccurred);
         }

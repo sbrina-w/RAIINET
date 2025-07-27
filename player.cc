@@ -55,6 +55,14 @@ Link* Player::getLink(char linkId) const {
     return (it != links.end()) ? it->second : nullptr;
 }
 
+void Player::incrementDownload(LinkType t){
+    if (t == LinkType::Data){
+        downloadedData += 1;
+    } else {
+        downloadedVirus += 1;
+    }
+}
+
 const std::map<char, Link*>& Player::getLinks() const {
     return links;
 }

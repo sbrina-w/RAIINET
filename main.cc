@@ -10,19 +10,14 @@
 int main(int argc, char *argv[])
 {
     // parse command line arguments
-    GameSetup setup;
-    // could include error message or usage of commands,
-    if (!setup.parseCommandLine(argc, argv))
-    {
-        return 1;
-    }
-
-    const GameSetupConfig &config = setup.getConfig();
-    // initialize game model
-    GameModel model;
+  GameSetup setup;
+  if (!setup.parseCommandLine(argc, argv)) return 1;
+  const GameSetupConfig &config = setup.getConfig();
+  // initialize game model
+  GameModel model;
 
     // initialize the server ports
-    model.getBoard().initServerPorts();
+  model.getBoard().initServerPorts();
 
     // set up displays based on config
     TextDisplay view1(1), view2(2); // ← pass in 1 and 2!
@@ -33,15 +28,15 @@ int main(int argc, char *argv[])
     if (config.graphicsEnabled) {
         graphicsView = new GraphicsDisplay();
         model.addObserver(graphicsView);
-    }
+  }
 
     // put the model in setup, if it fails exit
     if (!setup.initializeGame(model))
     {
         std::cerr << "Failed to initialize game with provided config.\n";
         if (config.graphicsEnabled && graphicsView) delete graphicsView;
-        return 1;
-    }
+    return 1;
+  }
 
     // print statements to debug ability setup
     for (int i = 1; i <= 2; ++i) {
@@ -58,17 +53,17 @@ int main(int argc, char *argv[])
     }
 
     // to draw the initial board
-    model.notify(ChangeEvent::GameStart);
+  model.notify(ChangeEvent::GameStart);
 
 
     
 
     // 5) Enter game loop
-    GameController controller(model);
-    controller.play();
+  GameController controller(model);
+  controller.play();
 
     if (graphicsView) {
         delete graphicsView;
     }
-    return 0;
+  return 0;
 }

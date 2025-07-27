@@ -16,6 +16,7 @@ private:
     std::vector<Player *> players;
     // continuously incremented, mod by number of players to get cur player
     int currentTurn; 
+    int lastOldR, lastOldC, lastNewR, lastNewC;
 
 public:
     GameModel();
@@ -44,6 +45,10 @@ public:
     const Board &getBoard() const;
     int getCurrentTurn() const;
     Player* getCurrentPlayer() const;
+    int getLastOldR() const;
+    int getLastOldC() const;
+    int getLastNewR() const;
+    int getLastNewC() const;
 };
 
 #endif

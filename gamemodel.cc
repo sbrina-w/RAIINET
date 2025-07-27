@@ -108,6 +108,7 @@ bool GameModel::isGameOver()
 
 void GameModel::nextTurn() {
     ++currentTurn;
+    notifyObservers(ChangeEvent::TurnEnded);
 }
 
 void GameModel::moveLink(char id, int dir)
@@ -239,6 +240,10 @@ void GameModel::moveLink(char id, int dir)
         // regular move
         dest.setLink(link);
         board.at(oldR, oldC).removeLink();
+        lastOldR = oldR;
+        lastOldC = oldC;
+        lastNewR = newR;
+        lastNewC = newC;
         notifyObservers(ChangeEvent::LinkMoved);
     }
 }
@@ -296,3 +301,8 @@ Player *GameModel::getCurrentPlayer() const
 {
     return players[(currentTurn - 1) % players.size()];
 }
+
+int GameModel::getLastOldR() const { return lastOldR; }
+int GameModel::getLastOldC() const { return lastOldC; }
+int GameModel::getLastNewR() const { return lastNewR; }
+int GameModel::getLastNewC() const { return lastNewC; }

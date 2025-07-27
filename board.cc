@@ -5,10 +5,10 @@ Board::Board() {}
 
 void Board::initServerPorts()
 {
-    // row 0 ports:
+    // row 0 ports (owned by player 1):
     cells[0][3].setCellType(CellType::ServerPort);
     cells[0][4].setCellType(CellType::ServerPort);
-    // row 7 ports:
+    // row 7 ports (owned by player 2):
     cells[7][3].setCellType(CellType::ServerPort);
     cells[7][4].setCellType(CellType::ServerPort);
 }

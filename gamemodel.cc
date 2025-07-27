@@ -177,7 +177,7 @@ void GameModel::moveLink(char id, int dir)
     // for if destination is a server port
     if (dest.getCellType() == CellType::ServerPort)
     {
-        bool isMyPort = (curr->getId() == 1 && newR == 7) || (curr->getId() == 2 && newR == 0);
+        bool isMyPort = (curr->getId() == 1 && newR == 0) || (curr->getId() == 2 && newR == 7);
         if (isMyPort)
         {
             throw std::invalid_argument("Cannot move onto your own server port");

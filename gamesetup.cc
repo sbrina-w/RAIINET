@@ -67,6 +67,7 @@ bool GameSetup::parseCommandLine(int argc, char* argv[]) {
     return true;
 }
 
+// todo: limit of up to 2 abilities per type
 bool GameSetup::parseAbilityString(const string& abilities) {
     //only 5 abilities
     if (abilities.length() != 5) {

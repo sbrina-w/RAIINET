@@ -22,16 +22,7 @@ void LinkBoost::execute(GameModel& model, vector<string> args) {
     if (!link) throw invalid_argument("LinkBoost: link not found or not owned by player");
 
     // 3. Check that the link is on the board
-    bool foundOnBoard = false;
-    Board& board = model.getBoard();
-    for (int r = 0; r < 8 && !foundOnBoard; ++r) {
-        for (int c = 0; c < 8 && !foundOnBoard; ++c) {
-            if (board.at(r, c).getLink() == link) {
-                foundOnBoard = true;
-            }
-        }
-    }
-    if (!foundOnBoard) throw invalid_argument("LinkBoost: link is not currently on the board");
+    if (!model.isLinkOnBoard(link)) throw invalid_argument("LinkBoost: link is not currently on the board");
 
     // 4. Set the link as boosted
     link->setBoosted(true);

@@ -111,6 +111,17 @@ void GameModel::nextTurn() {
     getCurrentPlayer()->startTurn();
 }
 
+bool GameModel::isLinkOnBoard(Link* link) const {
+    for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+            if (board.at(r, c).getLink() == link) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void GameModel::moveLink(char id, int dir)
 {
     Player *curr = getCurrentPlayer();
@@ -220,8 +231,8 @@ void GameModel::moveLink(char id, int dir)
 
         if (link->getStrength() >= other->getStrength())
         {
-            // current player wins so the opponent downloads
-            opp->incrementDownload(other->getType());
+            // current player wins, winner downloads loser's link
+            curr->incrementDownload(other->getType());
             dest.removeLink();
             dest.setLink(link);
             board.at(oldR, oldC).removeLink();
@@ -229,8 +240,8 @@ void GameModel::moveLink(char id, int dir)
         }
         else
         {
-            // you lose ⇒ so you download
-            curr->incrementDownload(link->getType());
+            // you lose ⇒ so opponent (winner) downloads your link
+            opp->incrementDownload(link->getType());
             board.at(oldR, oldC).removeLink();
             notifyObservers(ChangeEvent::DownloadOccurred);
         }
@@ -312,4 +323,13 @@ int GameModel::getCurrentTurn() const
 Player *GameModel::getCurrentPlayer() const
 {
     return players[(currentTurn - 1) % players.size()];
+}
+
+// helper for link related abilities
+Link* GameModel::findLinkById(char linkId) const {
+    for (Player* player : players) {
+        Link* link = player->getLink(linkId);
+        if (link) return link;
+    }
+    return nullptr;
 }

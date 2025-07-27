@@ -9,6 +9,8 @@
 
 using namespace std; 
 
+class Link;
+
 class GameModel : public Subject
 {
 private:
@@ -38,12 +40,14 @@ public:
     bool isGameOver();
     Player* getPlayer(int playerId) const;
     void nextTurn();
+    bool isLinkOnBoard(Link* link) const;
 
     //accessors
     Board &getBoard();
     const Board &getBoard() const;
     int getCurrentTurn() const;
     Player* getCurrentPlayer() const;
+    Link* findLinkById(char linkId) const;
 };
 
 #endif

@@ -128,7 +128,7 @@ void GameController::handleAbility(int abilityId, const std::vector<std::string>
         model.useAbility(abilityId, args);
         std::cout << "Player " << model.getCurrentPlayer()->getId() << " Used ability " << abilityId << "\n";
     } catch (const std::exception& e) {
-        std::cout << "Error using ability: " << e.what() << "\n";
+        std::cout << "Error using ability! " << e.what() << "\n";
     }
 }
 

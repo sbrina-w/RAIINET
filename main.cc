@@ -3,7 +3,7 @@
 #include "changeevent.h"
 #include "gamesetup.h"
 #include "gamecontroller.h"
-// #include "graphicsdisplay.h" //uncomment later
+#include "graphicsdisplay.h"
 
 #include <iostream>
 
@@ -29,20 +29,18 @@ int main(int argc, char *argv[])
     model.addObserver(&view1);
     model.addObserver(&view2);
 
-    // uncomment when implementing graphics display
-
-    // GraphicsDisplay* graphicsView = nullptr;
-    // if (config.graphicsEnabled) {
-    //     graphicsView = new GraphicsDisplay();
-    //     model.addObserver(graphicsView);
-    // }
+    GraphicsDisplay* graphicsView = nullptr;
+    if (config.graphicsEnabled) {
+        graphicsView = new GraphicsDisplay();
+        model.addObserver(graphicsView);
+    }
 
     // put the model in setup, if it fails exit
     if (!setup.initializeGame(model))
     {
         std::cerr << "Failed to initialize game with provided config.\n";
-        // if (graphicsView) delete graphicsView;
-        // return 1;
+        if (config.graphicsEnabled && graphicsView) delete graphicsView;
+        return 1;
     }
 
     // print statements to debug ability setup
@@ -69,9 +67,8 @@ int main(int argc, char *argv[])
     GameController controller(model);
     controller.play();
 
-    // for later
-    //  if (graphicsView) {
-    //      delete graphicsView;
-    //  }
+    if (graphicsView) {
+        delete graphicsView;
+    }
     return 0;
 }

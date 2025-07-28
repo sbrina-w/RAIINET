@@ -31,15 +31,19 @@ GraphicsDisplay::GraphicsDisplay(int viewerId)
 }
 
 GraphicsDisplay::~GraphicsDisplay() {
-  delete window;
-  XFreePixmap(window->getDisplay(), buffer1);
-  XFreePixmap(window->getDisplay(), buffer2);
+  //free pixmaps before deleting window
+  if (window) {
+    XFreePixmap(window->getDisplay(), buffer1);
+    XFreePixmap(window->getDisplay(), buffer2);
+    delete window;
+    window = nullptr;
+  }
 }
 
 void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
   //update view to current player
   int active = model.getCurrentPlayer()->getId();
-  setViewerId(active);  // always allow GameStart
+  setViewerId(active);
   if (event != ChangeEvent::GameStart && viewerId != active) return;
 
   //GameStart: draw both buffers, show active
@@ -62,15 +66,8 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
   //LinkMoved: update two cells in both buffers, but each using its own perspective
   if (event == ChangeEvent::LinkMoved)
   {
-    //redraw info panel (for active view)
-    drawPlayerInfo(model);
-
-    //coordinates that moved
-    int oldR = model.getLastOldR(), oldC = model.getLastOldC();
-    int newR = model.getLastNewR(), newC = model.getLastNewC();
-
     //remember active
-    int active = viewerId;
+    int activeViewer = viewerId;
 
     //update both buffers
     for (int pid = 1; pid <= 2; ++pid) {
@@ -79,6 +76,14 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
       Pixmap pix = (pid == 1 ? buffer1 : buffer2);
       Drawable saved = window->getDrawable();
       window->setDrawable(pix);
+
+      //redraw info panel for this perspective
+      drawPlayerInfo(model);
+      
+      //coordinates that moved
+      int oldR = model.getLastOldR(), oldC = model.getLastOldC();
+      int newR = model.getLastNewR(), newC = model.getLastNewC();
+      
       //draw both old cell and new cell under pid's reveal rules
       drawCell(oldR, oldC, model);
       drawCell(newR, newC, model);
@@ -86,10 +91,10 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
     }
 
     //restore active viewer
-    setViewerId(active);
+    setViewerId(activeViewer);
 
     //blit only the active buffer
-    Pixmap show = (active == 1 ? buffer1 : buffer2);
+    Pixmap show = (activeViewer == 1 ? buffer1 : buffer2);
     window->copyPixmap(
       show,
       0, 0,
@@ -104,24 +109,10 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
     //rebuild both buffers with their respective perspectives
     for (int pid = 1; pid <= 2; ++pid) {
       setViewerId(pid);
-      Pixmap pix = (pid == 1 ? buffer1 : buffer2);
-      Drawable saved = window->getDrawable();
-      window->setDrawable(pix);
-      //clear and redraw everything for this perspective
-      window->clear();
-      drawGrid();
-      drawPlayerInfo(model);
-  
-      //draw all cells with this player's perspective
-      for (int r = 0; r < 8; ++r) {
-        for (int c = 0; c < 8; ++c) {
-          drawCell(r, c, model);
-        }
-      }
-      window->setDrawable(saved);
+      drawBoardToPixmap(pid == 1 ? buffer1 : buffer2, model);
     }
     //mark buffer2 as built
-    buffer2Built = true;
+    buffer2Built = true; 
     //restore active viewer
     setViewerId(activeViewer);
     //update snapshot and blit the correct buffer
@@ -136,24 +127,20 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
   }
 
   //TurnEnded or AbilityUsed: instant blit the other pixmap
-  if (event == ChangeEvent::TurnEnded ||
-      event == ChangeEvent::AbilityUsed)
   {
-    drawPlayerInfo(model);
-    //if switching to player 2
+    //if switching to player 2 and buffer2 not built
     if (viewerId == 2 && !buffer2Built) {
-      //pre-render grid into buffer2
-      Drawable oldD = window->getDrawable();
-      window->setDrawable(buffer2);
-      drawGrid();
-      window->setDrawable(oldD);
-
-      drawPlayerInfo(model);
       drawBoardToPixmap(buffer2, model);
       buffer2Built = true;
+    } else {
+      //update the active buffer's info panel
+      Drawable oldD = window->getDrawable();
+      window->setDrawable(viewerId == 1 ? buffer1 : buffer2);
+      drawPlayerInfo(model);
+      window->setDrawable(oldD);
     }
 
-    //one-shot swap into window (grid + board + info already there)
+    //one-shot swap into window
     window->copyPixmap(
       (viewerId == 1 ? buffer1 : buffer2),
       0,0,
@@ -214,28 +201,73 @@ void GraphicsDisplay::drawGrid() {
 
 //info panel (always on-screen)
 void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
-  Player* viewr = model.getPlayer(viewerId);
-  Player* opp   = model.getPlayer(viewerId==1?2:1);
-  if (!viewr||!opp) return;
+  Player* viewer = model.getPlayer(viewerId);
+  Player* opponent = model.getPlayer(viewerId == 1 ? 2 : 1);
+  if (!viewer || !opponent) return;
 
+  //clear the info areas
+  window->fillRectangle(0, 0, window->getWidth(), INFO_PANEL_HEIGHT, Xwindow::White);
+  window->fillRectangle(0, window->getHeight() - INFO_PANEL_HEIGHT, 
+                       window->getWidth(), INFO_PANEL_HEIGHT, Xwindow::White);
+
+  //display current player info (top)
   ostringstream s1;
-  s1 << "P" << viewerId
-     << " D:" << viewr->getDataDownloadCount()
-     << " V:" << viewr->getVirusDownloadCount()
-     << " A:" << viewr->getUnusedAbilityCount();
-  window->drawString(10,30,s1.str(),Xwindow::Black);
-
+  s1 << "Player " << viewerId << ":";
+  window->drawString(10, 20, s1.str(), Xwindow::Black);
+  
   ostringstream s2;
-  s2 << "P" << (viewerId==1?2:1)
-     << " D:" << opp->getDataDownloadCount()
-     << " V:" << opp->getVirusDownloadCount()
-     << " A:" << opp->getUnusedAbilityCount();
-  window->drawString(
-    10,
-    window->getHeight()-20,
-    s2.str(),
-    Xwindow::Black
-  );
+  s2 << "Downloaded: " << viewer->getDataDownloadCount() << "D, " 
+     << viewer->getVirusDownloadCount() << "V";
+  window->drawString(10, 35, s2.str(), Xwindow::Black);
+  
+  ostringstream s3;
+  s3 << "Abilities: " << viewer->getUnusedAbilityCount();
+  window->drawString(10, 50, s3.str(), Xwindow::Black);
+
+  //display this player's links with their actual values
+  ostringstream s4;
+  const auto& myLinks = viewer->getLinks();
+  for (const auto& pair : myLinks) {
+    char id = pair.first;
+    Link* link = pair.second;
+    char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
+    s4 << id << ": " << typeChar << link->getStrength() << " ";
+  }
+  window->drawString(10, 65, s4.str(), Xwindow::Black);
+
+  //display opponent info (bottom)
+  ostringstream s5;
+  s5 << "Player " << (viewerId == 1 ? 2 : 1) << ":";
+  window->drawString(10, window->getHeight() - 65, s5.str(), Xwindow::Black);
+  
+  ostringstream s6;
+  s6 << "Downloaded: " << opponent->getDataDownloadCount() << "D, " 
+     << opponent->getVirusDownloadCount() << "V";
+  window->drawString(10, window->getHeight() - 50, s6.str(), Xwindow::Black);
+  
+  ostringstream s7;
+  s7 << "Abilities: " << opponent->getUnusedAbilityCount();
+  window->drawString(10, window->getHeight() - 35, s7.str(), Xwindow::Black);
+
+  //display opponent's links (known information only)
+  ostringstream s8;
+  const auto& oppLinks = opponent->getLinks();
+  for (const auto& pair : oppLinks) {
+    char id = pair.first;
+    Link* link = pair.second;
+    
+    s8 << id << ": ";
+    
+    //check if we know this opponent link
+    if (viewer->knowsOpponentLink(id) || link->isRevealed()) {
+      char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
+      s8 << typeChar << link->getStrength();
+    } else {
+      s8 << "?";
+    }
+    s8 << " ";
+  }
+  window->drawString(10, window->getHeight() - 20, s8.str(), Xwindow::Black);
 }
 
 //full‐board draw into pixmap
@@ -244,6 +276,7 @@ void GraphicsDisplay::drawBoardToPixmap(Pixmap pix, GameModel& model) {
   window->setDrawable(pix);
   window->clear();
   drawGrid();
+  drawPlayerInfo(model);
   for (int r = 0; r < 8; ++r)
     for (int c = 0; c < 8; ++c)
       drawCell(r,c,model);

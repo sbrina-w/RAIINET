@@ -109,11 +109,22 @@ bool GameModel::isGameOver()
 void GameModel::nextTurn() {
     ++currentTurn;
     notifyObservers(ChangeEvent::TurnEnded);
+    getCurrentPlayer()->startTurn();
 }
 
-void GameModel::moveLink(char id, int dir)
+bool GameModel::isLinkOnBoard(Link* link) const {
+    for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+            if (board.at(r, c).getLink() == link) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void GameModel::moveLink(Player* curr, char id, int dir)
 {
-    Player *curr = getCurrentPlayer();
     Link *link = curr->getLink(id);
 
     if (!link)
@@ -178,7 +189,7 @@ void GameModel::moveLink(char id, int dir)
     // for if destination is a server port
     if (dest.getCellType() == CellType::ServerPort)
     {
-        bool isMyPort = (curr->getId() == 1 && newR == 7) || (curr->getId() == 2 && newR == 0);
+        bool isMyPort = (curr->getId() == 1 && newR == 0) || (curr->getId() == 2 && newR == 7);
         if (isMyPort)
         {
             throw std::invalid_argument("Cannot move onto your own server port");
@@ -220,8 +231,8 @@ void GameModel::moveLink(char id, int dir)
 
         if (link->getStrength() >= other->getStrength())
         {
-            // current player wins so the opponent downloads
-            opp->incrementDownload(other->getType());
+            // current player wins, winner downloads loser's link
+            curr->incrementDownload(other->getType());
             dest.removeLink();
             dest.setLink(link);
             board.at(oldR, oldC).removeLink();
@@ -229,8 +240,8 @@ void GameModel::moveLink(char id, int dir)
         }
         else
         {
-            // you lose ⇒ so you download
-            curr->incrementDownload(link->getType());
+            // you lose ⇒ so opponent (winner) downloads your link
+            opp->incrementDownload(link->getType());
             board.at(oldR, oldC).removeLink();
             notifyObservers(ChangeEvent::DownloadOccurred);
         }
@@ -260,10 +271,26 @@ Player *GameModel::getPlayer(int playerId) const
     return nullptr;
 }
 
-void GameModel::useAbility(int /*playerID*/, int /*abilityID*/, int /*target*/)
-{
-    // TODO: implement abilities
-    // …
+void GameModel::useAbility(int abilityID, const std::vector<std::string>& args) {
+    Player* player = getCurrentPlayer();
+    if (!player) throw std::runtime_error("useAbility: getCurrentPlayer failed");
+
+    if (!player->canUseAbility()) {
+        throw std::runtime_error("You have already used all allowed abilities this turn.");
+    }
+
+    const auto& abilities = player->getAbilities();
+    if (abilityID < 1 || abilityID > static_cast<int>(abilities.size()))
+        throw std::invalid_argument("useAbility: Invalid ability index, must be between 1-5.");
+
+    Ability* ability = abilities.at(abilityID - 1);
+
+    if (ability->isUsed()) throw runtime_error("The ability in this slot has already been used.");
+
+    ability->execute(*this, args);
+
+    player->incrementAbilitiesUsed();
+
     notifyObservers(ChangeEvent::AbilityUsed);
 }
 
@@ -300,6 +327,15 @@ int GameModel::getCurrentTurn() const
 Player *GameModel::getCurrentPlayer() const
 {
     return players[(currentTurn - 1) % players.size()];
+}
+
+// helper for link related abilities
+Link* GameModel::findLinkById(char linkId) const {
+    for (Player* player : players) {
+        Link* link = player->getLink(linkId);
+        if (link) return link;
+    }
+    return nullptr;
 }
 
 int GameModel::getLastOldR() const { return lastOldR; }

@@ -9,6 +9,8 @@
 
 using namespace std; 
 
+class Link;
+
 class GameModel : public Subject
 {
 private:
@@ -27,8 +29,8 @@ public:
     void placeLinksOnBoard();
 
     //game actions
-    void moveLink(char id, int dir);
-    void useAbility(int playerID, int abilityID, int target);
+    void moveLink(Player* player, char id, int dir);
+    void useAbility(int abilityID, const vector<string>& args);
 
     //observer management
     void addObserver(Observer *observer);
@@ -39,12 +41,14 @@ public:
     bool isGameOver();
     Player* getPlayer(int playerId) const;
     void nextTurn();
+    bool isLinkOnBoard(Link* link) const;
 
     //accessors
     Board &getBoard();
     const Board &getBoard() const;
     int getCurrentTurn() const;
     Player* getCurrentPlayer() const;
+    Link* findLinkById(char linkId) const;
     int getLastOldR() const;
     int getLastOldC() const;
     int getLastNewR() const;

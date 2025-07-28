@@ -14,12 +14,21 @@ void Scan::execute(GameModel& model, vector<string> args) {
     if (args.size() < 1) throw invalid_argument("Scan: missing linkID");
     char linkID = args[0][0];
 
-    // TODO: Find the link (not owned by current player)
-    // Link* link = model.findOpponentLink(linkID);
-    // if (!link) throw invalid_argument("Scan: link not found or is your own link");
+    Player* current = model.getCurrentPlayer();
+    Link* link = model.findLinkById(linkID);
 
-    // cout << "Link " << linkID << ": Type = " << (link->getType() == LinkType::Data ? "Data" : "Virus")
-    //      << ", Strength = " << link->getStrength() << endl;
-    // link->reveal(); // Optionally reveal for display
-    // used = true;
+    if (!link) throw invalid_argument("Scan: link not found");
+    if (!model.isLinkOnBoard(link)) throw invalid_argument("Scan: link is not currently on the board");
+    if (link->getOwner() == current) throw invalid_argument("Scan: cannot scan your own link");
+
+    // Reveal and print info
+    link->reveal();
+    cout << "Link " << linkID << ": Type = " 
+         << (link->getType() == LinkType::Data ? "Data" : "Virus")
+         << ", Strength = " << link->getStrength() << endl;
+
+    // let the player remember this link
+    current->learnOpponentLink(linkID, link);
+
+    markUsed();
 }

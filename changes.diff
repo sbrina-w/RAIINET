@@ -1,0 +1,1676 @@
+diff --git a/.vscode/settings.json b/.vscode/settings.json
+index 40b7aaf..f5afda6 100644
+--- a/.vscode/settings.json
++++ b/.vscode/settings.json
+@@ -71,6 +71,7 @@
+         "execution": "cpp",
+         "ios": "cpp",
+         "optional": "cpp",
+-        "variant": "cpp"
++        "variant": "cpp",
++        "fstream": "cpp"
+     }
+ }
+diff --git a/Makefile b/Makefile
+index 1a2a2fb..53ef1ad 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,5 +1,5 @@
+ CXX = g++
+-CXXFLAGS = -std=c++17 -Wall -Wextra -g
++CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -g
+ 
+ # List all your source files here
+ SRCS = main.cc gamemodel.cc gamesetup.cc gamecontroller.cc board.cc cell.cc link.cc player.cc subject.cc textdisplay.cc \
+@@ -7,13 +7,21 @@ ability.cc linkboost.cc firewall.cc download.cc scan.cc polarize.cc exchange.cc
+ 
+ OBJS = $(SRCS:.cc=.o)
+ 
++# Graphics display source
++GRAPHICS_SRCS = graphicsdisplay.cc xwindow.cc
++GRAPHICS_OBJS = $(GRAPHICS_SRCS:.cc=.o)
++
+ # If you want to build the graphics-demo separately
+ GRAPHICS_DEMO_SRCS = graphics-demo/graphicsdemo.cc graphics-demo/window.cc
+ GRAPHICS_DEMO_OBJS = $(GRAPHICS_DEMO_SRCS:.cc=.o)
+ 
++GRAPHICS_LIBS = -lX11
++GRAPHICS_CXXFLAGS = -DHAVE_X11
++ALL_OBJS = $(OBJS) $(GRAPHICS_OBJS)
++
+ # The main executable
+-raiinet: $(OBJS)
+-	$(CXX) $(CXXFLAGS) -o $@ $^
++raiinet: $(ALL_OBJS)
++	$(CXX) $(CXXFLAGS) $(GRAPHICS__CXXFLAGS) -o $@ $^ $(GRAPHICS_LIBS)
+ 
+ # Graphics demo executable
+ graphicsdemo: $(GRAPHICS_DEMO_OBJS)
+@@ -26,4 +34,4 @@ graphicsdemo: $(GRAPHICS_DEMO_OBJS)
+ # Clean rule
+ .PHONY: clean
+ clean:
+-	rm -f $(OBJS) $(GRAPHICS_DEMO_OBJS) raiinet graphicsdemo
++	rm -f $(OBJS) $(GRAPHICS_OBJS) $(GRAPHICS_DEMO_OBJS) raiinet graphicsdemo
+diff --git a/ability.cc b/ability.cc
+index 763b7c8..43db079 100644
+--- a/ability.cc
++++ b/ability.cc
+@@ -2,10 +2,14 @@
+ 
+ Ability::Ability(char id) : used(false), abilityID(id) {}
+ 
+-bool Ability::isUsed() {
++bool Ability::isUsed() const {
+     return used;
+ }
+ 
+-char Ability::getID() {
++char Ability::getID() const {
+     return abilityID;
+ }
++
++void Ability::markUsed() {
++    used = true;
++}
+diff --git a/ability.h b/ability.h
+index a4e4988..c0f4822 100644
+--- a/ability.h
++++ b/ability.h
+@@ -11,12 +11,15 @@ private:
+     bool used;
+     char abilityID;
+ 
++protected:
++    void markUsed();
++
+ public:
+     Ability(char id);
+     virtual ~Ability() = default;
+     virtual void execute(GameModel& model, std::vector<std::string> args) = 0;
+-    bool isUsed();
+-    char getID();
++    bool isUsed() const;
++    char getID() const;
+ };
+ 
+ #endif
+diff --git a/board.cc b/board.cc
+index 5fe3275..5f5c950 100644
+--- a/board.cc
++++ b/board.cc
+@@ -5,10 +5,10 @@ Board::Board() {}
+ 
+ void Board::initServerPorts()
+ {
+-    // row 0 ports:
++    // row 0 ports (owned by player 1):
+     cells[0][3].setCellType(CellType::ServerPort);
+     cells[0][4].setCellType(CellType::ServerPort);
+-    // row 7 ports:
++    // row 7 ports (owned by player 2):
+     cells[7][3].setCellType(CellType::ServerPort);
+     cells[7][4].setCellType(CellType::ServerPort);
+ }
+diff --git a/cell.cc b/cell.cc
+index 2220b56..40346c9 100644
+--- a/cell.cc
++++ b/cell.cc
+@@ -25,7 +25,6 @@ Player *Cell::getFirewallOwner() const
+ void Cell::setFirewallOwner(Player *owner)
+ {
+     firewallOwner = owner;
+-    cellType = CellType::Firewall;
+ }
+ 
+ Link *Cell::getLink() const
+diff --git a/download.cc b/download.cc
+index 4e666f7..5760a5d 100644
+--- a/download.cc
++++ b/download.cc
+@@ -13,11 +13,32 @@ void Download::execute(GameModel& model, vector<string> args) {
+     if (args.size() < 1) throw invalid_argument("Download: missing linkID");
+     char linkID = args[0][0];
+ 
+-    // TODO: Find the opponent and their link
+-    // Player* opponent = model.getOpponentPlayer();
+-    // Link* link = opponent->getLink(linkID);
+-    // if (!link) throw invalid_argument("Download: link not found");
++    Player* current = model.getCurrentPlayer();
++    Link* link = model.findLinkById(linkID);
+ 
+-    // model.downloadLink(link); // This should handle updating download counts and removing the link from the board
+-    // used = true;
++    if (!link) throw invalid_argument("Download: link not found");
++    if (!model.isLinkOnBoard(link)) throw invalid_argument("Download: link is not currently on the board");
++    if (link->getOwner() == current) throw invalid_argument("Download: must target an opponent's link, not your own");
++
++    // Find the link's position on the board and remove it
++    // Just do a scan of the board for now, don't have to set row + col fields inside of Link
++    Board& board = model.getBoard();
++    bool removed = false;
++    for (int r = 0; r < 8 && !removed; ++r) {
++        for (int c = 0; c < 8 && !removed; ++c) {
++            if (board.at(r, c).getLink() == link) {
++                board.at(r, c).removeLink();
++                model.clearChangedCells();
++                model.addChangedCell(r, c);
++                removed = true;
++            }
++        }
++    }
++
++    // Increment download count for the current player
++    current->incrementDownload(link->getType());
++    // Learn the downloaded link
++    current->learnOpponentLink(linkID, link);
++
++    markUsed();
+ }
+diff --git a/exchange.cc b/exchange.cc
+index 4fbe98a..1eb3be2 100644
+--- a/exchange.cc
++++ b/exchange.cc
+@@ -16,12 +16,40 @@ void Exchange::execute(GameModel& model, vector<string> args) {
+     char linkID1 = args[0][0];
+     char linkID2 = args[1][0];
+ 
+-    // TODO: Find both links and ensure both belong to current player
+-    // Link* link1 = player->getLink(linkID1);
+-    // Link* link2 = player->getLink(linkID2);
+-    // if (!link1 || !link2) throw invalid_argument("Exchange: links not found or not owned by player");
+-
+-    // TODO: Swap their positions on the board
+-    // model.swapLinks(link1, link2);
+-    // used = true;
++    if (linkID1 == linkID2) throw invalid_argument("Exchange: cannot exchange the same link with itself");
++
++    Player* player = model.getCurrentPlayer();
++    Link* link1 = player->getLink(linkID1);
++    Link* link2 = player->getLink(linkID2);
++
++    if (!link1 || !link2) throw invalid_argument("Exchange: both links must exist and be owned by the current player");
++    if (!model.isLinkOnBoard(link1) || !model.isLinkOnBoard(link2))
++        throw invalid_argument("Exchange: both links must be on the board");
++
++    Board& board = model.getBoard();
++    int r1 = -1, c1 = -1, r2 = -1, c2 = -1;
++    // Find positions of both links
++    for (int r = 0; r < 8; ++r) {
++        for (int c = 0; c < 8; ++c) {
++            if (board.at(r, c).getLink() == link1) {
++                r1 = r; c1 = c;
++            }
++            if (board.at(r, c).getLink() == link2) {
++                r2 = r; c2 = c;
++            }
++        }
++    }
++    if (r1 == -1 || r2 == -1)
++        throw runtime_error("Exchange: could not find both links on the board");
++
++    // Swap the links
++    board.at(r1, c1).setLink(link2);
++    board.at(r2, c2).setLink(link1);
++
++    markUsed();
++    
++    //mark both cells as changed
++    model.clearChangedCells();
++    model.addChangedCell(r1, c1);
++    model.addChangedCell(r2, c2);
+ }
+diff --git a/firewall.cc b/firewall.cc
+index 4b8782f..4d0b850 100644
+--- a/firewall.cc
++++ b/firewall.cc
+@@ -2,6 +2,7 @@
+ #include "gamemodel.h"
+ #include "board.h"
+ #include "cell.h"
++#include "celltype.h"
+ #include <stdexcept>
+ using namespace std;
+ 
+@@ -15,16 +16,26 @@ void Firewall::execute(GameModel& model, vector<string> args) {
+     int row = stoi(args[0]);
+     int col = stoi(args[1]);
+ 
++    // bounds check
++    if (row < 0 || row > 7 || col < 0 || col > 7) {
++        throw invalid_argument("Firewall: row/col out of bounds");
++    }
++
+     Board& board = model.getBoard();
+     Cell& cell = board.at(row, col);
+ 
+-    // TODO: Check if cell is empty and not a server port
+-    // if (cell.getCellType() == CellType::ServerPort || cell.getLink())
+-    //     throw invalid_argument("Firewall: Cannot place on server port or occupied cell");
+-
+-    // cell.setFirewallOwner(model.getCurrentPlayer());
+-    // cell.setCellType(CellType::Firewall);
++    // Check if cell is valid for firewall placement
++    if (cell.getCellType() == CellType::ServerPort)
++        throw invalid_argument("Firewall: Cannot place on server port");
++    if (cell.getLink())
++        throw invalid_argument("Firewall: Cannot place on occupied cell");
++    if (cell.getCellType() == CellType::Firewall)
++        throw invalid_argument("Firewall: Cannot place on existing firewall");
+ 
+-    // TODO: Ensure Board/Cell logic handles firewall effects during movement and battles
+-    // used = true;
++    // Place the firewall
++    cell.setFirewallOwner(model.getCurrentPlayer());
++    cell.setCellType(CellType::Firewall);
++    model.clearChangedCells();
++    model.addChangedCell(row, col);
++    markUsed();
+ }
+diff --git a/gamecontroller.cc b/gamecontroller.cc
+index c133bb1..6b61994 100644
+--- a/gamecontroller.cc
++++ b/gamecontroller.cc
+@@ -9,7 +9,7 @@ void GameController::play() {
+     std::string line;
+     std::cout << "\nRAIInet Game Started!\n";
+     std::cout << "Available commands: move, abilities, ability, board, sequence, quit\n";
+-    std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn> ";    
++    std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn > ";    
+     
+     while (std::getline(std::cin, line)) {
+         std::istringstream iss(line);
+@@ -35,8 +35,13 @@ void GameController::play() {
+         else if (command == "ability") {
+             int abilityId;
+             if (iss >> abilityId) {
+-                //todo: parse additional parameters for abilities that need them
+-                handleAbility(abilityId);
++                // Parse additional parameters for abilities that need them
++                std::vector<std::string> args;
++                std::string arg;
++                while (iss >> arg) {
++                    args.push_back(arg);
++                }
++                handleAbility(abilityId, args);
+             } else {
+                 std::cout << "Usage: ability <id> [additional parameters]\n";
+             }
+@@ -58,7 +63,7 @@ void GameController::play() {
+         }
+         
+         if (!model.isGameOver()) {
+-            std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn> ";
++            std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn > ";
+         } else {
+             std::cout << "Game Over!\n";
+             break;
+@@ -79,8 +84,8 @@ void GameController::handleMove(char linkId, const std::string& direction) {
+     }
+     
+     try {
+-        model.moveLink(linkId, dir);
+-        std::cout << "Moved link " << linkId << " " << direction << "\n";
++        model.moveLink(model.getCurrentPlayer(), linkId, dir);
++        std::cout << "Player " << model.getCurrentPlayer()->getId() << " moved link " << linkId << " " << direction << "\n";
+         // moveLink(...) already triggers the LinkMoved changeevent, calling TurnEnded would double printing
+         // increment turn counter
+         model.nextTurn();
+@@ -89,16 +94,41 @@ void GameController::handleMove(char linkId, const std::string& direction) {
+     }
+ }
+ 
++std::string GameController::abilityFullName(char id) {
++    switch (id) {
++        case 'L': return "LinkBoost";
++        case 'F': return "Firewall";
++        case 'D': return "Download";
++        case 'S': return "Scan";
++        case 'P': return "Polarize";
++        case 'E': return "Exchange";
++        case 'G': return "GoLater";
++        case 'H': return "Hijack";
++        default:  return "Unknown";
++    }
++}
++
+ void GameController::handleAbilities() {
+-    //todo: Show actual ability status from player
++    Player* player = model.getCurrentPlayer();
++    if (!player) {
++        std::cout << "Error: No current player.\n";
++        return;
++    }
++    const auto& abilities = player->getAbilities();
++    std::cout << "Abilities for Player " << player->getId() << ":\n";
++    for (size_t i = 0; i < abilities.size(); ++i) {
++        const Ability* ability = abilities[i];
++        std::string status = ability->isUsed() ? "(used)" : "(not used)";
++        std::cout << "  " << (i+1) << ". " << abilityFullName(ability->getID()) << " " << status << "\n";
++    }
+ }
+ 
+-void GameController::handleAbility(int abilityId) {
++void GameController::handleAbility(int abilityId, const std::vector<std::string>& args) {
+     try {
+-        model.useAbility(model.getCurrentPlayer()->getId(), abilityId, 0);
+-        std::cout << "Used ability " << abilityId << "\n";
++        model.useAbility(abilityId, args);
++        std::cout << "Player " << model.getCurrentPlayer()->getId() << " Used ability " << abilityId << "\n";
+     } catch (const std::exception& e) {
+-        std::cout << "Error using ability: " << e.what() << "\n";
++        std::cout << "Error using ability! " << e.what() << "\n";
+     }
+ }
+ 
+@@ -125,19 +155,46 @@ void GameController::handleSequence(const std::string& filename) {
+         std::string command;
+         iss >> command;
+         
+-        if (command == "move") {
++        if (command == "quit") {
++            std::cout << "Game ended.\n";
++            break;
++        } else if (command == "move") {
+             std::string linkId, direction;
+             if (iss >> linkId >> direction) {
+                 handleMove(linkId[0], direction);
++            } else {
++                std::cout << "Usage: move <link> <direction>\n";
++                std::cout << "Example: move a up\n";
+             }
+-        }
+-        else if (command == "ability") {
++        } else if (command == "abilities") {
++            handleAbilities();
++        } else if (command == "ability") {
+             int abilityId;
+             if (iss >> abilityId) {
+-                handleAbility(abilityId);
++                // parse additional parameters for abilities that need them
++                std::vector<std::string> args;
++                std::string arg;
++                while (iss >> arg) {
++                    args.push_back(arg);
++                }
++                handleAbility(abilityId, args);
++            } else {
++                std::cout << "Usage: ability <id> [additional parameters]\n";
+             }
++        } else if (command == "board"){
++            handleBoard();
++        // recursively also handle sequence to other files
++        } else if (command == "sequence") {
++            std::string filename;
++            if (iss >> filename) {
++                handleSequence(filename);
++            } else {
++                std::cout << "Usage: sequence <filename>\n";
++            }
++        } else {
++            std::cout << "Unknown command: " << command << "\n";
++            std::cout << "Available commands: move, abilities, ability, board, sequence, quit\n";
+         }
+-        //todo: other commands
+         
+         if (model.isGameOver()) {
+             std::cout << "Game ended during sequence execution.\n";
+diff --git a/gamecontroller.h b/gamecontroller.h
+index 328403e..56c9670 100644
+--- a/gamecontroller.h
++++ b/gamecontroller.h
+@@ -8,11 +8,14 @@
+ class GameController {
+ private:
+     GameModel& model;
++
++    // helper functions
++    static std::string abilityFullName(char id);
+     
+     //command handling methods
+     void handleMove(char linkId, const std::string& direction);
+     void handleAbilities();
+-    void handleAbility(int abilityId);
++    void handleAbility(int abilityId, const std::vector<std::string>& args);
+     void handleBoard();
+     void handleSequence(const std::string& filename);
+ 
+diff --git a/gamemodel.cc b/gamemodel.cc
+index fbaedf7..8262327 100644
+--- a/gamemodel.cc
++++ b/gamemodel.cc
+@@ -108,11 +108,23 @@ bool GameModel::isGameOver()
+ 
+ void GameModel::nextTurn() {
+     ++currentTurn;
++    notifyObservers(ChangeEvent::TurnEnded);
++    getCurrentPlayer()->startTurn();
+ }
+ 
+-void GameModel::moveLink(char id, int dir)
++bool GameModel::isLinkOnBoard(Link* link) const {
++    for (int r = 0; r < 8; ++r) {
++        for (int c = 0; c < 8; ++c) {
++            if (board.at(r, c).getLink() == link) {
++                return true;
++            }
++        }
++    }
++    return false;
++}
++
++void GameModel::moveLink(Player* curr, char id, int dir)
+ {
+-    Player *curr = getCurrentPlayer();
+     Link *link = curr->getLink(id);
+ 
+     if (!link)
+@@ -162,9 +174,16 @@ void GameModel::moveLink(char id, int dir)
+             throw std::invalid_argument("Cannot move off that edge");
+         }
+ 
+-        //downloading our own link (no need to reveal anything as we know our own link)
++        Player *opp = getPlayer(curr->getId() == 1 ? 2 : 1);
++
++        // downloading your own link after moving it off the edge, reveal it to oppo for game consistency
++        link->reveal();
++        opp->learnOpponentLink(link->getId(), link); // opponent gets to learn it
+         curr->incrementDownload(link->getType());
+         board.at(oldR, oldC).removeLink();
++        //mark old cell as changed (link downloaded/removed from display)
++        clearChangedCells();
++        addChangedCell(oldR, oldC);
+         notifyObservers(ChangeEvent::DownloadOccurred);
+         return;
+     }
+@@ -172,12 +191,31 @@ void GameModel::moveLink(char id, int dir)
+     // in bounds so check the cell currently there:
+     Cell &dest = board.at(newR, newC);
+ 
+-    //TODO: Handle firewall
++    // for if destination is a firewall cell
++    if (dest.getCellType() == CellType::Firewall) {
++        Player* firewallOwner = dest.getFirewallOwner();
++        if (firewallOwner && firewallOwner != curr) {
++            // only affect opponent links
++            link->reveal();
++            firewallOwner->learnOpponentLink(link->getId(), link);
++
++            if (link->getType() == LinkType::Virus) {
++                // virus is downloaded by its owner (curr)
++                curr->incrementDownload(link->getType());
++                board.at(oldR, oldC).removeLink();
++                clearChangedCells();
++                addChangedCell(oldR, oldC);
++                notifyObservers(ChangeEvent::DownloadOccurred);
++                return;
++            }
++            // if not a virus, continue with normal movement (could be battle, etc.)
++        }
++    }
+ 
+     // for if destination is a server port
+     if (dest.getCellType() == CellType::ServerPort)
+     {
+-        bool isMyPort = (curr->getId() == 1 && newR == 7) || (curr->getId() == 2 && newR == 0);
++        bool isMyPort = (curr->getId() == 1 && newR == 0) || (curr->getId() == 2 && newR == 7);
+         if (isMyPort)
+         {
+             throw std::invalid_argument("Cannot move onto your own server port");
+@@ -190,6 +228,9 @@ void GameModel::moveLink(char id, int dir)
+         opp->learnOpponentLink(link->getId(), link); //opponent gets to learn it
+         opp->incrementDownload(link->getType()); //then they increment their download count
+         board.at(oldR, oldC).removeLink();
++        //mark old cell as changed
++        clearChangedCells();
++        addChangedCell(oldR, oldC);
+         notifyObservers(ChangeEvent::DownloadOccurred);
+         return;
+     }
+@@ -219,18 +260,24 @@ void GameModel::moveLink(char id, int dir)
+ 
+         if (link->getStrength() >= other->getStrength())
+         {
+-            // current player wins so the opponent downloads
+-            opp->incrementDownload(other->getType());
++            // current player wins, winner downloads loser's link
++            curr->incrementDownload(other->getType());
+             dest.removeLink();
+             dest.setLink(link);
+             board.at(oldR, oldC).removeLink();
++            //mark both cells as changed (old position cleared, new position has winning link)
++            clearChangedCells();
++            addChangedCell(oldR, oldC);
++            addChangedCell(newR, newC);
+             notifyObservers(ChangeEvent::DownloadOccurred);
+         }
+         else
+         {
+-            // you lose ⇒ so you download
+-            curr->incrementDownload(link->getType());
++            // you lose ⇒ so opponent (winner) downloads your link
++            opp->incrementDownload(link->getType());
+             board.at(oldR, oldC).removeLink();
++            clearChangedCells();
++            addChangedCell(oldR, oldC);
+             notifyObservers(ChangeEvent::DownloadOccurred);
+         }
+     }
+@@ -239,6 +286,9 @@ void GameModel::moveLink(char id, int dir)
+         // regular move
+         dest.setLink(link);
+         board.at(oldR, oldC).removeLink();
++        clearChangedCells();
++        addChangedCell(oldR, oldC);
++        addChangedCell(newR, newC);
+         notifyObservers(ChangeEvent::LinkMoved);
+     }
+ }
+@@ -255,10 +305,26 @@ Player *GameModel::getPlayer(int playerId) const
+     return nullptr;
+ }
+ 
+-void GameModel::useAbility(int /*playerID*/, int /*abilityID*/, int /*target*/)
+-{
+-    // TODO: implement abilities
+-    // …
++void GameModel::useAbility(int abilityID, const std::vector<std::string>& args) {
++    Player* player = getCurrentPlayer();
++    if (!player) throw std::runtime_error("useAbility: getCurrentPlayer failed");
++
++    if (!player->canUseAbility()) {
++        throw std::runtime_error("You have already used all allowed abilities this turn.");
++    }
++
++    const auto& abilities = player->getAbilities();
++    if (abilityID < 1 || abilityID > static_cast<int>(abilities.size()))
++        throw std::invalid_argument("useAbility: Invalid ability index, must be between 1-5.");
++
++    Ability* ability = abilities.at(abilityID - 1);
++
++    if (ability->isUsed()) throw runtime_error("The ability in this slot has already been used.");
++
++    ability->execute(*this, args);
++
++    player->incrementAbilitiesUsed();
++
+     notifyObservers(ChangeEvent::AbilityUsed);
+ }
+ 
+@@ -296,3 +362,24 @@ Player *GameModel::getCurrentPlayer() const
+ {
+     return players[(currentTurn - 1) % players.size()];
+ }
++
++// helper for link related abilities
++Link* GameModel::findLinkById(char linkId) const {
++    for (Player* player : players) {
++        Link* link = player->getLink(linkId);
++        if (link) return link;
++    }
++    return nullptr;
++}
++
++void GameModel::addChangedCell(int row, int col) {
++    changedCells.push_back({row, col});
++}
++
++void GameModel::clearChangedCells() {
++    changedCells.clear();
++}
++
++const std::vector<std::pair<int, int>>& GameModel::getChangedCells() const {
++    return changedCells;
++}
+diff --git a/gamemodel.h b/gamemodel.h
+index 9b39095..5f9e6a8 100644
+--- a/gamemodel.h
++++ b/gamemodel.h
+@@ -9,6 +9,8 @@
+ 
+ using namespace std; 
+ 
++class Link;
++
+ class GameModel : public Subject
+ {
+ private:
+@@ -16,6 +18,7 @@ private:
+     std::vector<Player *> players;
+     // continuously incremented, mod by number of players to get cur player
+     int currentTurn; 
++    vector<pair<int, int>> changedCells;
+ 
+ public:
+     GameModel();
+@@ -26,8 +29,8 @@ public:
+     void placeLinksOnBoard();
+ 
+     //game actions
+-    void moveLink(char id, int dir);
+-    void useAbility(int playerID, int abilityID, int target);
++    void moveLink(Player* player, char id, int dir);
++    void useAbility(int abilityID, const vector<string>& args);
+ 
+     //observer management
+     void addObserver(Observer *observer);
+@@ -38,12 +41,17 @@ public:
+     bool isGameOver();
+     Player* getPlayer(int playerId) const;
+     void nextTurn();
++    bool isLinkOnBoard(Link* link) const;
++    void addChangedCell(int row, int col);
++    void clearChangedCells();
+ 
+     //accessors
+     Board &getBoard();
+     const Board &getBoard() const;
+     int getCurrentTurn() const;
+     Player* getCurrentPlayer() const;
++    Link* findLinkById(char linkId) const;
++    const vector<pair<int, int>>& getChangedCells() const;
+ };
+ 
+ #endif
+diff --git a/gamesetup.cc b/gamesetup.cc
+index 3f833d1..677535e 100644
+--- a/gamesetup.cc
++++ b/gamesetup.cc
+@@ -67,17 +67,15 @@ bool GameSetup::parseCommandLine(int argc, char* argv[]) {
+     return true;
+ }
+ 
++// todo: limit of up to 2 abilities per type
+ bool GameSetup::parseAbilityString(const string& abilities) {
+-    //only 5 abilities
+-    if (abilities.length() != 5) {
+-        return false;
+-    }
+-    //check for valid ability letters
+-    set<char> validAbilities = {'L', 'F', 'D', 'S', 'P', 'E', 'G', 'H'};
++    if (abilities.length() != 5) return false;
++    std::map<char, int> counts;
++    std::set<char> validAbilities = {'L', 'F', 'D', 'S', 'P', 'E', 'G', 'H'};
+     for (char c : abilities) {
+-        if (validAbilities.find(c) == validAbilities.end()) {
+-            return false;
+-        }
++        if (validAbilities.find(c) == validAbilities.end()) return false;
++        counts[c]++;
++        if (counts[c] > 2) return false; // max 2 of each kind
+     }
+     return true;
+ }
+diff --git a/golater.cc b/golater.cc
+index b6b8e50..7086280 100644
+--- a/golater.cc
++++ b/golater.cc
+@@ -8,7 +8,6 @@ GoLater::GoLater() : Ability('G') {}
+ // No args required
+ // Usage: ability <N>
+ void GoLater::execute(GameModel& model, vector<string> args) {
+-    // TODO: Set a flag on the current player or model to allow 2 abilities next turn
+-    // model.getCurrentPlayer()->setGoLaterActive(true);
+-    // used = true;
++    model.getCurrentPlayer()->activateGoLater();
++    markUsed();
+ }
+diff --git a/graphicsdisplay.cc b/graphicsdisplay.cc
+new file mode 100644
+index 0000000..529d961
+--- /dev/null
++++ b/graphicsdisplay.cc
+@@ -0,0 +1,280 @@
++#include "graphicsdisplay.h"
++#include "gamemodel.h"
++#include "linktype.h"
++#include "link.h"
++#include "player.h"
++#include "board.h"
++#include "cell.h"
++#include "celltype.h"
++#include <iostream>
++#include <sstream>
++#include <vector>
++
++using namespace std;
++
++GraphicsDisplay::GraphicsDisplay(int viewerId)
++  : viewerId(viewerId)
++{
++   int w = BOARD_OFFSET_X*2 + CELL_SIZE*8;
++   int h = BOARD_OFFSET_Y*2 + CELL_SIZE*8 + INFO_PANEL_HEIGHT*2;
++   window = new Xwindow(w, h);
++   //allocate two pixmaps
++   buffer1 = window->makePixmap();
++   buffer2 = window->makePixmap();
++  //prerender grid once into buffer1
++  Drawable oldD = window->getDrawable();
++  window->setDrawable(buffer1);
++  drawGrid();
++  window->setDrawable(oldD);
++}
++
++GraphicsDisplay::~GraphicsDisplay() {
++  //free pixmaps before deleting window
++  if (window) {
++    XFreePixmap(window->getDisplay(), buffer1);
++    XFreePixmap(window->getDisplay(), buffer2);
++    delete window;
++    window = nullptr;
++  }
++}
++
++void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
++  //update view to current player
++  int active = model.getCurrentPlayer()->getId();
++  setViewerId(active);
++  if (event != ChangeEvent::GameStart && viewerId != active) return;
++
++  //GameStart: draw both buffers, show active
++  if (event == ChangeEvent::GameStart) {
++    //build only buffer1 (grid already there)
++    drawPlayerInfo(model);
++    drawBoardToPixmap(buffer1, model);
++    //one‐shot blit + implicit flush
++    window->copyPixmap(
++      buffer1,
++      0,0,
++      window->getWidth(), window->getHeight(),
++      0,0
++    );
++    buffer2Built = false;
++    return;
++  }
++
++  //update all changed cells in both buffers, but each using its own perspective
++  if (event == ChangeEvent::LinkMoved || event == ChangeEvent::DownloadOccurred || event == ChangeEvent::AbilityUsed) {
++    const auto& changedCells = model.getChangedCells();
++    if(!changedCells.empty()) {
++      //minimal redraw in both buffers
++      updateBuffersWithChangedCells(changedCells, model);
++      //blit only the active buffer
++      Pixmap show = (viewerId == 1 ? buffer1 : buffer2);
++      window->copyPixmap(
++        show,
++        0, 0,
++        window->getWidth(), window->getHeight(),
++        0, 0
++      );
++    }
++    return;
++  }
++
++  //TurnEnded: instant blit the other pixmap
++  {
++    //if switching to player 2 and buffer2 not built
++    if (viewerId == 2 && !buffer2Built) {
++      drawBoardToPixmap(buffer2, model);
++      buffer2Built = true;
++    } else {
++      //update the active buffer's info panel
++      Drawable oldD = window->getDrawable();
++      window->setDrawable(viewerId == 1 ? buffer1 : buffer2);
++      drawPlayerInfo(model);
++      window->setDrawable(oldD);
++    }
++
++    //one-shot swap into window
++    window->copyPixmap(
++      (viewerId == 1 ? buffer1 : buffer2),
++      0,0,
++      window->getWidth(), window->getHeight(),
++      0,0
++    );
++    return;
++  }
++
++  //GameOver
++  if (event == ChangeEvent::GameOver) {
++    window->drawString(
++      window->getWidth()/2 - 50,
++      window->getHeight()/2,
++      "GAME OVER"
++    );
++  }
++}
++
++//draws grid into current drawable
++void GraphicsDisplay::drawGrid() {
++  for (int i = 0; i <= 8; ++i) {
++    int x = BOARD_OFFSET_X + i*CELL_SIZE;
++    window->drawLine(x, BOARD_OFFSET_Y,
++                     x, BOARD_OFFSET_Y + 8*CELL_SIZE);
++    int y = BOARD_OFFSET_Y + i*CELL_SIZE;
++    window->drawLine(BOARD_OFFSET_X, y,
++                     BOARD_OFFSET_X + 8*CELL_SIZE, y);
++  }
++}
++
++//info panel (always on-screen)
++void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
++  Player* viewer = model.getPlayer(viewerId);
++  Player* opponent = model.getPlayer(viewerId == 1 ? 2 : 1);
++  if (!viewer || !opponent) return;
++
++  //clear the info areas
++  window->fillRectangle(0, 0, window->getWidth(), INFO_PANEL_HEIGHT, Xwindow::White);
++  window->fillRectangle(0, window->getHeight() - INFO_PANEL_HEIGHT, 
++                       window->getWidth(), INFO_PANEL_HEIGHT, Xwindow::White);
++
++  //display current player info (top)
++  ostringstream s1;
++  s1 << "Player " << viewerId << ":";
++  window->drawString(10, 20, s1.str(), Xwindow::Black);
++  
++  ostringstream s2;
++  s2 << "Downloaded: " << viewer->getDataDownloadCount() << "D, " 
++     << viewer->getVirusDownloadCount() << "V";
++  window->drawString(10, 35, s2.str(), Xwindow::Black);
++  
++  ostringstream s3;
++  s3 << "Abilities: " << viewer->getUnusedAbilityCount();
++  window->drawString(10, 50, s3.str(), Xwindow::Black);
++
++  //display this player's links with their actual values
++  ostringstream s4;
++  const auto& myLinks = viewer->getLinks();
++  for (const auto& pair : myLinks) {
++    char id = pair.first;
++    Link* link = pair.second;
++    char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
++    s4 << id << ": " << typeChar << link->getStrength() << " ";
++  }
++  window->drawString(10, 65, s4.str(), Xwindow::Black);
++
++  //display opponent info (bottom)
++  ostringstream s5;
++  s5 << "Player " << (viewerId == 1 ? 2 : 1) << ":";
++  window->drawString(10, window->getHeight() - 65, s5.str(), Xwindow::Black);
++  
++  ostringstream s6;
++  s6 << "Downloaded: " << opponent->getDataDownloadCount() << "D, " 
++     << opponent->getVirusDownloadCount() << "V";
++  window->drawString(10, window->getHeight() - 50, s6.str(), Xwindow::Black);
++  
++  ostringstream s7;
++  s7 << "Abilities: " << opponent->getUnusedAbilityCount();
++  window->drawString(10, window->getHeight() - 35, s7.str(), Xwindow::Black);
++
++  //display opponent's links (known information only)
++  ostringstream s8;
++  const auto& oppLinks = opponent->getLinks();
++  for (const auto& pair : oppLinks) {
++    char id = pair.first;
++    Link* link = pair.second;
++    
++    s8 << id << ": ";
++    
++    //check if we know this opponent link
++    if (viewer->knowsOpponentLink(id) || link->isRevealed()) {
++      char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
++      s8 << typeChar << link->getStrength();
++    } else {
++      s8 << "?";
++    }
++    s8 << " ";
++  }
++  window->drawString(10, window->getHeight() - 20, s8.str(), Xwindow::Black);
++}
++
++//full‐board draw into pixmap
++void GraphicsDisplay::drawBoardToPixmap(Pixmap pix, GameModel& model) {
++  Drawable old = window->getDrawable();
++  window->setDrawable(pix);
++  window->clear();
++  drawGrid();
++  drawPlayerInfo(model);
++  for (int r = 0; r < 8; ++r)
++    for (int c = 0; c < 8; ++c)
++      drawCell(r,c,model);
++  window->setDrawable(old);
++}
++
++//draw one cell at (row,col)
++void GraphicsDisplay::drawCell(int row,int col,GameModel& model) {
++  const Board& board = model.getBoard();
++  const Cell&  cell  = board.at(row,col);
++  int x = BOARD_OFFSET_X + col*CELL_SIZE;
++  int y = BOARD_OFFSET_Y + row*CELL_SIZE;
++
++  window->fillRectangle(x+1,y+1,CELL_SIZE-2,CELL_SIZE-2,Xwindow::White);
++
++  if (cell.getCellType() == CellType::ServerPort) {
++    window->fillRectangle(x+5,y+5,CELL_SIZE-10,CELL_SIZE-10,Xwindow::Blue);
++    window->drawString(x+CELL_SIZE/2-5,y+CELL_SIZE/2+5,"S",Xwindow::White);
++  }
++  else if (cell.getLink()) {
++    Link* link = cell.getLink();
++    bool isO   = link->getOwner()->getId()==viewerId;
++    bool rev   = link->isRevealed()||isO;
++    int  bg    = getLinkColor(link,rev,isO);
++    window->fillRectangle(x+5,y+5,CELL_SIZE-10,CELL_SIZE-10,bg);
++    string id(1,link->getId());
++    window->drawString(x+CELL_SIZE/2-5,y+CELL_SIZE/2+5,id,Xwindow::White);
++  }
++  if (cell.getCellType() == CellType::Firewall) {
++    Player* o = cell.getFirewallOwner();
++    if (o) {
++      char f = (o->getId()==1?'m':'w');
++      window->drawString(x+5,y+CELL_SIZE-15,string(1,f),Xwindow::Red);
++    }
++  }
++
++  //cell border
++  window->drawLine(x,   y,   x+CELL_SIZE, y,   Xwindow::Black);
++  window->drawLine(x,   y,   x,           y+CELL_SIZE, Xwindow::Black);
++  window->drawLine(x+CELL_SIZE,y,   x+CELL_SIZE,y+CELL_SIZE,Xwindow::Black);
++  window->drawLine(x,   y+CELL_SIZE,x+CELL_SIZE,y+CELL_SIZE,Xwindow::Black);
++}
++
++//colour selection
++int GraphicsDisplay::getLinkColor(Link* link,bool isRevealed,bool isOwner) const {
++  if (!isRevealed && !isOwner) return Xwindow::Black;
++  return link->getType()==LinkType::Virus ? Xwindow::Red : Xwindow::Green;
++}
++
++//helper for redrawing changed cells
++void GraphicsDisplay::updateBuffersWithChangedCells(
++    const vector<pair<int,int>>& changedCells,
++    GameModel& model)
++{
++    //remember active
++    int activeViewer = viewerId;
++    //update both buffers
++    for (int pid = 1; pid <= 2; ++pid) {
++        //set persepctive to pid
++        setViewerId(pid);
++        Pixmap pix = (pid==1?buffer1:buffer2);
++        auto oldD = window->getDrawable();
++        window->setDrawable(pix);
++
++        //redraw info panel for current perspective
++        drawPlayerInfo(model);
++
++        //redraw only changed cells
++        for (auto [r,c] : changedCells) {
++            drawCell(r,c,model);
++        }
++        window->setDrawable(oldD);
++    }
++    //restore active viewer
++    setViewerId(activeViewer);
++}
+diff --git a/graphicsdisplay.h b/graphicsdisplay.h
+index 1ee5be8..bbdc9dd 100644
+--- a/graphicsdisplay.h
++++ b/graphicsdisplay.h
+@@ -1,17 +1,44 @@
+ #ifndef GRAPHICSDISPLAY_H
+ #define GRAPHICSDISPLAY_H
+ 
++#include <vector>
++#include <X11/Xlib.h>
++#include <sstream>
++#include <string>
++#include "link.h"
+ #include "observer.h"
+ #include "xwindow.h"
++#include "gamemodel.h"
++#include "celltype.h"
+ 
+ class GraphicsDisplay : public Observer {
++public:
++  explicit GraphicsDisplay(int viewerId = 1);
++  ~GraphicsDisplay() override;
++
++  void notify(GameModel& model, ChangeEvent event) override;
++  void setViewerId(int id) { viewerId = id; }
++
+ private:
+-    XWindow* window;
++  Xwindow*      window;    //shared window
++  int           viewerId;  //1 or 2
++  Pixmap        buffer1;   //off-screen for player 1
++  Pixmap        buffer2;   //off-screen for player 2
++  bool buffer2Built = false;
++  void updateBuffersWithChangedCells(const std::vector<std::pair<int,int>>& changedCells, GameModel& model);
+ 
+-public:
+-    GraphicsDisplay();
+-    ~GraphicsDisplay();
+-    void notify(GameModel& model, ChangeEvent event) override;
++  //layout constants
++  static const int CELL_SIZE         = 60;
++  static const int BOARD_OFFSET_X    = 50;
++  static const int BOARD_OFFSET_Y    = 100;
++  static const int INFO_PANEL_HEIGHT = 80;
++  
++  //core draw routines:
++  void drawGrid();
++  void drawPlayerInfo(GameModel& model);
++  void drawBoardToPixmap(Pixmap pix, GameModel& model);
++  void drawCell(int row,int col,GameModel& model);
++  int  getLinkColor(Link* link,bool isRevealed,bool isOwner) const;
+ };
+ 
+ #endif
+diff --git a/hijack.cc b/hijack.cc
+index 87cd3c4..beb7e7d 100644
+--- a/hijack.cc
++++ b/hijack.cc
+@@ -15,12 +15,22 @@ void Hijack::execute(GameModel& model, vector<string> args) {
+     char linkID = args[0][0];
+     string direction = args[1];
+ 
+-    // TODO: Find the opponent's link
+-    // Link* link = model.getOpponentPlayer()->getLink(linkID);
+-    // if (!link) throw invalid_argument("Hijack: link not found");
++    Player* current = model.getCurrentPlayer();
++    Link* link = model.findLinkById(linkID);
+ 
+-    // assume that model.moveLink already handles boosted vs unboosted link
++    if (!link) throw invalid_argument("Hijack: link not found");
++    Player* owner = link->getOwner();
++    if (owner == current) throw invalid_argument("Hijack: can only hijack opponent's link");
++    if (!model.isLinkOnBoard(link)) throw invalid_argument("Hijack: link is not currently on the board");
+ 
+-    // model.moveLink(linkID, direction);
+-    // used = true;
++    int dir = -1;
++    if (direction == "up") dir = 0;
++    else if (direction == "down") dir = 1;
++    else if (direction == "left") dir = 2;
++    else if (direction == "right") dir = 3;
++    else throw invalid_argument("Hijack: invalid direction (must be 'up', 'down', 'left', or 'right')");
++
++    model.moveLink(owner, linkID, dir);
++
++    markUsed();
+ }
+diff --git a/linkboost.cc b/linkboost.cc
+index e58fbea..441c969 100644
+--- a/linkboost.cc
++++ b/linkboost.cc
+@@ -10,16 +10,23 @@ LinkBoost::LinkBoost() : Ability('L') {}
+ // args[0]: link id (char, e.g. "a" or "A")
+ // Usage: ability <N> <linkID>
+ void LinkBoost::execute(GameModel& model, vector<string> args) {
+-    if (args.size() < 1) throw invalid_argument("LinkBoost: missing linkID");
++    if (args.size() < 1) throw invalid_argument("LinkBoost: missing linkID in parameters");
+     char linkID = args[0][0];
+ 
+-    // Find the current player (TODO: depends on turn logic)
+-    // Player* player = model.getCurrentPlayer();
+-    // Link* link = player->getLink(linkID);
+-    // if (!link) throw invalid_argument("LinkBoost: link not found or not owned by player");
++    // 1. Get the current player
++    Player* player = model.getCurrentPlayer();
++    if (!player) throw runtime_error("LinkBoost: could not get current player");
+ 
+-    // link->setBoosted(true);
+-    // TODO: Ensure movement logic in Board/GameModel checks for boosted status and moves 2 squares instead of 1.
+-    // Mark this ability as used
+-    // used = true;
++    // 2. Get the link owned by the player
++    Link* link = player->getLink(linkID);
++    if (!link) throw invalid_argument("LinkBoost: link not found or not owned by player");
++
++    // 3. Check that the link is on the board
++    if (!model.isLinkOnBoard(link)) throw invalid_argument("LinkBoost: link is not currently on the board");
++
++    // 4. Set the link as boosted
++    link->setBoosted(true);
++
++    // 5. Mark this ability as used
++    markUsed();
+ }
+diff --git a/main.cc b/main.cc
+index 1636284..c63e4a5 100644
+--- a/main.cc
++++ b/main.cc
+@@ -3,75 +3,67 @@
+ #include "changeevent.h"
+ #include "gamesetup.h"
+ #include "gamecontroller.h"
+-// #include "graphicsdisplay.h" //uncomment later
++#include "graphicsdisplay.h"
+ 
+ #include <iostream>
+ 
+ int main(int argc, char *argv[])
+ {
+     // parse command line arguments
+-    GameSetup setup;
+-    // could include error message or usage of commands,
+-    if (!setup.parseCommandLine(argc, argv))
+-    {
+-        return 1;
+-    }
+-
+-    const GameSetupConfig &config = setup.getConfig();
+-    // initialize game model
+-    GameModel model;
++  GameSetup setup;
++  if (!setup.parseCommandLine(argc, argv)) return 1;
++  const GameSetupConfig &config = setup.getConfig();
++  // initialize game model
++  GameModel model;
+ 
+     // initialize the server ports
+-    model.getBoard().initServerPorts();
++  model.getBoard().initServerPorts();
+ 
+     // set up displays based on config
+     TextDisplay view1(1), view2(2); // ← pass in 1 and 2!
+     model.addObserver(&view1);
+     model.addObserver(&view2);
+ 
+-    // uncomment when implementing graphics display
+-
+-    // GraphicsDisplay* graphicsView = nullptr;
+-    // if (config.graphicsEnabled) {
+-    //     graphicsView = new GraphicsDisplay();
+-    //     model.addObserver(graphicsView);
+-    // }
++    GraphicsDisplay* graphicsView = nullptr;
++    if (config.graphicsEnabled) {
++        graphicsView = new GraphicsDisplay();
++        model.addObserver(graphicsView);
++  }
+ 
+     // put the model in setup, if it fails exit
+     if (!setup.initializeGame(model))
+     {
+         std::cerr << "Failed to initialize game with provided config.\n";
+-        // if (graphicsView) delete graphicsView;
+-        // return 1;
+-    }
++        if (config.graphicsEnabled && graphicsView) delete graphicsView;
++    return 1;
++  }
+ 
+     // print statements to debug ability setup
+-    for (int i = 1; i <= 2; ++i) {
+-        Player* player = model.getPlayer(i);
+-        if (!player) continue;
+-        std::cout << "Player " << i << " abilities:\n";
+-        // You may need to add a getter for the abilities vector if it's private
+-        // For now, add this method to Player:
+-        // const std::vector<Ability*>& getAbilities() const { return abilities; }
+-        for (const auto& ability : player->getAbilities()) {
+-            std::cout << "  ID: " << ability->getID()
+-                      << " Used: " << (ability->isUsed() ? "yes" : "no") << "\n";
+-        }
+-    }
++    // for (int i = 1; i <= 2; ++i) {
++    //     Player* player = model.getPlayer(i);
++    //     if (!player) continue;
++    //     std::cout << "Player " << i << " abilities:\n";
++    //     // You may need to add a getter for the abilities vector if it's private
++    //     // For now, add this method to Player:
++    //     // const std::vector<Ability*>& getAbilities() const { return abilities; }
++    //     for (const auto& ability : player->getAbilities()) {
++    //         std::cout << "  ID: " << ability->getID()
++    //                   << " Used: " << (ability->isUsed() ? "yes" : "no") << "\n";
++    //     }
++    // }
+ 
+     // to draw the initial board
+-    model.notify(ChangeEvent::GameStart);
++  model.notify(ChangeEvent::GameStart);
+ 
+ 
+     
+ 
+     // 5) Enter game loop
+-    GameController controller(model);
+-    controller.play();
++  GameController controller(model);
++  controller.play();
+ 
+-    // for later
+-    //  if (graphicsView) {
+-    //      delete graphicsView;
+-    //  }
+-    return 0;
++    if (graphicsView) {
++        delete graphicsView;
++    }
++  return 0;
+ }
+diff --git a/player.cc b/player.cc
+index 4d1b4da..e69fadd 100644
+--- a/player.cc
++++ b/player.cc
+@@ -15,7 +15,7 @@ Player::Player(int playerId)
+     abilitiesRemaining(5),
+     downloadedData(0),
+     downloadedVirus(0),
+-    allowTwoAbilities(false)
++    goLaterActive(false)    
+ {
+     //initialize with default abilities
+     setAbilities("LFDSP");
+@@ -102,11 +102,24 @@ void Player::setAbilities(const std::string& abilityOrder) {
+     }
+ }
+ 
+-void Player::playAbility(int abilityInd, int target) {
+-    // stub for now
++void Player::incrementAbilitiesUsed() {
++    ++abilitiesUsedThisTurn;
+ }
+ 
+-//could remove?
+-void Player::chooseAbility(const std::string& abilities) {
+-    // stub for now
++bool Player::canUseAbility() const {
++    return abilitiesUsedThisTurn < abilitiesAllowedThisTurn;
++}
++
++void Player::activateGoLater() {
++    goLaterActive = true;
++}
++
++const std::vector<Ability*>& Player::getAbilities() const {
++    return abilities;
++}
++
++void Player::startTurn() {
++    abilitiesUsedThisTurn = 0;
++    abilitiesAllowedThisTurn = goLaterActive ? 2 : 1;
++    goLaterActive = false;
+ }
+diff --git a/player.h b/player.h
+index c4fe613..8a07c32 100644
+--- a/player.h
++++ b/player.h
+@@ -20,39 +20,42 @@ private:
+     int abilitiesRemaining;
+     int downloadedData;
+     int downloadedVirus;
+-    bool allowTwoAbilities;
++
++    // ability usage tracking
++    bool goLaterActive = false;
++    int abilitiesUsedThisTurn = 0;
++    int abilitiesAllowedThisTurn = 1;
+ 
+ public:
+     Player(int playerId);
+     ~Player();
+     
+-    //getters
++    // getters
+     int getId() const;
+     int getDataDownloadCount() const;
+     int getVirusDownloadCount() const;
+     int getUnusedAbilityCount() const;
+ 
+-    //for downloading:
++    // for downloading:
+     void incrementDownload(LinkType t);
+ 
+-    //link management
++    // link management
+     void addLink(char linkId, Link* link);
+     Link* getLink(char linkId) const;
+     const std::map<char, Link*>& getLinks() const;
+ 
+-    //opponent link knowledge
++    // opponent link knowledge
+     void learnOpponentLink(char linkId, Link* link);
+     Link* getKnownOpponentLink(char linkId) const;
+     bool knowsOpponentLink(char linkId) const;
+ 
+-    //ability management
++    // ability management
+     void setAbilities(const std::string& abilityOrder);
+-    
+-    void playAbility(int abilityInd, int target);
+-    void chooseAbility(const std::string& abilities);
+-
+-    // getter for abilities, use for debugging
+-    const std::vector<Ability*>& getAbilities() const { return abilities; }
++    void incrementAbilitiesUsed();
++    bool canUseAbility() const;
++    void activateGoLater();
++    const std::vector<Ability*>& getAbilities() const;
++    void startTurn();
+ };
+ 
+ #endif
+diff --git a/polarize.cc b/polarize.cc
+index 1bf3aa6..90d9c8a 100644
+--- a/polarize.cc
++++ b/polarize.cc
+@@ -13,10 +13,26 @@ void Polarize::execute(GameModel& model, vector<string> args) {
+     if (args.size() < 1) throw invalid_argument("Polarize: missing linkID");
+     char linkID = args[0][0];
+ 
+-    // TODO: Find the link (could be on either player)
+-    // Link* link = model.findLink(linkID);
+-    // if (!link) throw invalid_argument("Polarize: link not found");
++    Link* link = model.findLinkById(linkID);
++    if (!link) throw invalid_argument("Polarize: link not found");
++    if (!model.isLinkOnBoard(link)) throw invalid_argument("Polarize: link is not currently on the board");
+ 
+-    // link->switchType();
+-    // used = true;
++    //find the link's position
++    Board& board = model.getBoard();
++    for (int r = 0; r < 8; r++) {
++        for (int c = 0; c < 8; c++) {
++            if (board.at(r, c).getLink() == link) {
++                // Switch the link's type
++                link->switchType();
++                markUsed();
++                
++                //mark cell as changed for graphics update
++                model.clearChangedCells();
++                model.addChangedCell(r, c);
++                return;
++            }
++        }
++    }
++    
++    throw runtime_error("Polarize: could not find link on board");
+ }
+diff --git a/scan.cc b/scan.cc
+index ff56020..2b7de5b 100644
+--- a/scan.cc
++++ b/scan.cc
+@@ -14,12 +14,34 @@ void Scan::execute(GameModel& model, vector<string> args) {
+     if (args.size() < 1) throw invalid_argument("Scan: missing linkID");
+     char linkID = args[0][0];
+ 
+-    // TODO: Find the link (not owned by current player)
+-    // Link* link = model.findOpponentLink(linkID);
+-    // if (!link) throw invalid_argument("Scan: link not found or is your own link");
++    Player* current = model.getCurrentPlayer();
++    Link* link = model.findLinkById(linkID);
+ 
+-    // cout << "Link " << linkID << ": Type = " << (link->getType() == LinkType::Data ? "Data" : "Virus")
+-    //      << ", Strength = " << link->getStrength() << endl;
+-    // link->reveal(); // Optionally reveal for display
+-    // used = true;
++    if (!link) throw invalid_argument("Scan: link not found");
++    if (!model.isLinkOnBoard(link)) throw invalid_argument("Scan: link is not currently on the board");
++    if (link->getOwner() == current) throw invalid_argument("Scan: cannot scan your own link");
++
++    //find the link's position
++    Board& board = model.getBoard();
++    for (int r = 0; r < 8; ++r) {
++        for (int c = 0; c < 8; ++c) {
++            if (board.at(r, c).getLink() == link) {
++                // Reveal and print info
++                link->reveal();
++                cout << "Link " << linkID << ": Type = " 
++                     << (link->getType() == LinkType::Data ? "Data" : "Virus")
++                     << ", Strength = " << link->getStrength() << endl;
++
++                // let the player remember this link
++                current->learnOpponentLink(linkID, link);
++                markUsed();
++                //mark this cell as changed
++                model.clearChangedCells();
++                model.addChangedCell(r, c);
++                model.notify(ChangeEvent::AbilityUsed);
++                return;
++            }
++        }
++    }
++    throw runtime_error("Scan: could not find link on board");
+ }
+diff --git a/testing/1.txt b/testing/1.txt
+new file mode 100644
+index 0000000..cc73c41
+--- /dev/null
++++ b/testing/1.txt
+@@ -0,0 +1,27 @@
++# Abilities for Player 1:
++#   1. LinkBoost
++#   2. Firewall
++#   3. Download
++#   4. Scan
++#   5. Polarize
++# Abilities for Player 2:
++#   1. LinkBoost
++#   2. Firewall
++#   3. Download
++#   4. Scan
++#   5. Polarize
++# Simple movement and battles, no abilities used
++
++move a down
++move A up
++move b down
++move B up
++move a down
++move A up
++move b down
++move B up
++move b right
++move B right
++move a down
++move A up
++move a down
+diff --git a/testing/2.txt b/testing/2.txt
+new file mode 100644
+index 0000000..1dee5c2
+--- /dev/null
++++ b/testing/2.txt
+@@ -0,0 +1,43 @@
++# Abilities for Player 1:
++#   1. LinkBoost
++#   2. Firewall
++#   3. Download
++#   4. Scan
++#   5. Polarize
++# Abilities for Player 2:
++#   1. LinkBoost
++#   2. Firewall
++#   3. Download
++#   4. Scan
++#   5. Polarize
++# Each player: (optional ability) then move, then other player's turn
++
++# Player 1 boosts link a
++# LinkBoost on a
++ability 1 a    
++move a down
++
++# Player 2 scans Player 1's a
++# Scan a (should reveal type/strength)
++ability 4 a    
++move A up
++
++# Player 1 polarizes their own b (should flip type)
++# Polarize b (flip type)
++ability 5 b   
++move b down
++
++# Player 2 boosts link B
++# LinkBoost on B
++ability 1 B    
++move B up
++
++# Player 1 scans Player 2's B
++# Scan B (should reveal type/strength)
++ability 4 B    
++move c down
++
++# Player 2 downloads Player 1's b (must be on board and not owned by Player 2)
++# Download b (remove from board, increment download count)
++ability 3 b    
++move C left
+diff --git a/textdisplay.cc b/textdisplay.cc
+index edc288e..8dc46da 100644
+--- a/textdisplay.cc
++++ b/textdisplay.cc
+@@ -53,12 +53,22 @@ void TextDisplay::notify(GameModel &model, ChangeEvent event)
+                 if (cell.getCellType() == CellType::ServerPort) {
+                     std::cout << 'S';
+                 }
+-                //check for links
++                // check for links (takes priority over firewall)
+                 else if (cell.getLink()) {
+                     Link* link = cell.getLink();
+                     std::cout << link->getId();
+                 }
+-                //empty space
++                // 3) Firewall present (no link)
++                else if (cell.getCellType() == CellType::Firewall) {
++                    Player* owner = cell.getFirewallOwner();
++                    if (owner) {
++                        std::cout << (owner->getId() == 1 ? 'm' : 'w');
++                    } else {
++                        // add this as a safety, but it should never happen
++                        std::cout << '.';
++                    }
++                }
++                // empty space
+                 else {
+                     std::cout << '.';
+                 }
+diff --git a/xwindow.cc b/xwindow.cc
+new file mode 100644
+index 0000000..4326fcb
+--- /dev/null
++++ b/xwindow.cc
+@@ -0,0 +1,73 @@
++#include <X11/Xlib.h>
++#include <X11/Xutil.h>
++#include <iostream>
++#include <cstdlib>
++#include <string>
++#include <unistd.h>
++#include "xwindow.h"
++
++using namespace std;
++
++Xwindow::Xwindow(int width, int height) : width{width}, height{height} {
++
++  d = XOpenDisplay(NULL);
++  if (d == NULL) {
++    cerr << "Cannot open display" << endl;
++    exit(1);
++  }
++  int scr = DefaultScreen(d);
++  win = XCreateSimpleWindow(d,
++                            RootWindow(d, scr),
++                            10,10,
++                            width, height,
++                            1,
++                            BlackPixel(d, scr),
++                            WhitePixel(d, scr));
++  drawable = win;
++  XSelectInput(d, win, ExposureMask | KeyPressMask);
++  XMapRaised(d, win);
++
++  gc = XCreateGC(d, win, 0, nullptr);
++  Colormap cmap = DefaultColormap(d, scr);
++  const char *names[5] = {"white","black","red","green","blue"};
++  for (int i = 0; i < 5; ++i) {
++    XColor col;
++    XParseColor(d, cmap, names[i], &col);
++    XAllocColor(d, cmap, &col);
++    colours[i] = col.pixel;
++  }
++  XSetForeground(d, gc, colours[Black]);
++  XSynchronize(d, false);
++  usleep(1000);
++}
++
++Xwindow::~Xwindow() {
++  XFreeGC(d, gc);
++  XCloseDisplay(d);
++}
++
++void Xwindow::fillRectangle(int x,int y,int w,int h,int colour) {
++  XSetForeground(d, gc, colours[colour]);
++  XFillRectangle(d, drawable, gc, x,y,w,h);
++  XSetForeground(d, gc, colours[Black]);
++}
++
++void Xwindow::drawString(int x,int y,const string &s,int colour) {
++  XSetForeground(d, gc, colours[colour]);
++  XDrawString(d, drawable, gc, x, y, s.c_str(), s.size());
++  XSetForeground(d, gc, colours[Black]);
++}
++
++void Xwindow::drawLine(int x1,int y1,int x2,int y2,int colour) {
++  XSetForeground(d, gc, colours[colour]);
++  XDrawLine(d, drawable, gc, x1,y1,x2,y2);
++  XSetForeground(d, gc, colours[Black]);
++}
++
++void Xwindow::clear() {
++  XClearWindow(d, win);
++}
++
++void Xwindow::flush() {
++  XFlush(d);
++}
+diff --git a/xwindow.h b/xwindow.h
+index 6b08919..ddb3c5f 100644
+--- a/xwindow.h
++++ b/xwindow.h
+@@ -1,10 +1,53 @@
+ #ifndef XWINDOW_H
+ #define XWINDOW_H
++#include <X11/Xlib.h>
++#include <iostream>
++#include <string>
++
++class Xwindow {
++  Display *d;
++  Window   win;       // the on-screen window
++  Drawable drawable;  // current drawing target
++  GC       gc;
++  int      width, height;
++  unsigned long colours[5];
+ 
+-class XWindow {
+ public:
+-    void fillRectangle(int x, int y, int width, int height);
+-    void drawString(int x, int y, const char* text);
++  enum { White=0, Black, Red, Green, Blue };
++
++  Xwindow(int width=500, int height=500);
++  ~Xwindow();
++
++  int getWidth()  const { return width; }
++  int getHeight() const { return height; }
++
++  //access the Display* for XFreePixmap / XCopyArea
++  Display* getDisplay() const { return d; }
++
++  void fillRectangle(int x,int y,int w,int h,int colour=Black);
++  void drawString   (int x,int y,const std::string &s,int colour=Black);
++  void drawLine     (int x1,int y1,int x2,int y2,int colour=Black);
++  void clear        ();      // clears only the on-screen window
++  void flush        ();      // flush to screen
++
++  //off-screen pixmap helpers
++  Pixmap makePixmap() const {
++    return XCreatePixmap(d, win, width, height,
++                         DefaultDepth(d, DefaultScreen(d)));
++  }
++
++  void copyPixmap(Pixmap src,
++                  int sx,int sy,
++                  unsigned int w,unsigned int h,
++                  int dx,int dy)
++  {
++    XCopyArea(d, src, win, gc, sx, sy, w, h, dx, dy);
++    flush();
++  }
++
++  //change the drawing target (win or a Pixmap)
++  Drawable getDrawable() const { return drawable; }
++  void     setDrawable(Drawable dr) { drawable = dr; }
+ };
+ 
+ #endif

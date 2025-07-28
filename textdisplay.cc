@@ -9,67 +9,125 @@
 #include <iostream>
 #include <iomanip>
 
+inline const char *to_string(ChangeEvent e)
+{
+    switch (e)
+    {
+    case ChangeEvent::GameStart:
+        return "GameStart";
+    case ChangeEvent::LinkMoved:
+        return "LinkMoved";
+    case ChangeEvent::AbilityUsed:
+        return "AbilityUsed";
+    case ChangeEvent::DownloadOccurred:
+        return "DownloadOccurred";
+    case ChangeEvent::TurnEnded:
+        return "TurnEnded";
+    case ChangeEvent::PrintBoard:
+        return "PrintBoard";
+    case ChangeEvent::GameOver:
+        return "GameOver";
+    default:
+        return "UnknownEvent";
+    }
+}
+
 void TextDisplay::notify(GameModel &model, ChangeEvent event)
 {
-    // Redraw on any board‐changing or turn‐ending event
     switch (event)
     {
     case ChangeEvent::GameStart:
     case ChangeEvent::PrintBoard:
-    case ChangeEvent::LinkMoved:
-    case ChangeEvent::DownloadOccurred:
+    // case ChangeEvent::LinkMoved: //<-- removed because this always leads to a turnended
+    // case ChangeEvent::DownloadOccurred: //removed erase as well
     case ChangeEvent::AbilityUsed:
     case ChangeEvent::TurnEnded:
     {
+        // for future debugging:
+        // std::cout << "[DEBUG] event = " << to_string(event) << " for TextDisplay" << viewerId << "\n";
+
         const Board &board = model.getBoard();
-        Player* viewer = model.getPlayer(viewerId);
-        Player* opponent = model.getPlayer(viewerId == 1 ? 2 : 1);
+        Player *current = model.getCurrentPlayer();
 
-        if (!viewer || !opponent) return;
+        // only print for the current player since both text displays will get this notification
+        if (current->getId() != viewerId)
+        {
+            return;
+        }
 
-        //display player info
-        std::cout << "Player " << viewerId << ":\n";
-        std::cout << "Downloaded: " << viewer->getDataDownloadCount() << "D, " 
-                  << viewer->getVirusDownloadCount() << "V\n";
-        std::cout << "Abilities: " << viewer->getUnusedAbilityCount() << "\n";
+        Player *p1 = model.getPlayer(1);
+        Player *p2 = model.getPlayer(2);
+        if (!current || !p1 || !p2)
+            return;
 
-        //display this player's links with their actual values
-        const auto& myLinks = viewer->getLinks();
-        for (const auto& pair : myLinks) {
-            char id = pair.first;
-            Link* link = pair.second;
-            char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
-            std::cout << id << ": " << typeChar << link->getStrength() << " ";
+        // for turn ended, print a turn ended break.
+        if (event == ChangeEvent::TurnEnded)
+        {
+            std::cout << "\n"
+                      << "------" << " PLAYER " << (current->getId() == 1 ? "2" : "1") << " TURN ENDED ------" << "\n";
+        }
+
+        if (event == ChangeEvent::GameStart || event == ChangeEvent::TurnEnded)
+        {
+            std::cout << "\n"
+                      << "------" << " PLAYER " << current->getId() << " TURN START ------" << "\n";
+        }
+
+        // prints player 1's info (player 1 always on top)
+        std::cout << "\n"
+                  << "Player 1";
+        if (current->getId() == 1)
+        {
+            std::cout << " (Current Player)";
+        }
+        std::cout << ":\n";
+        std::cout << "Downloaded: "
+                  << p1->getDataDownloadCount() << "D, "
+                  << p1->getVirusDownloadCount() << "V\n";
+        std::cout << "Abilities: "
+                  << p1->getUnusedAbilityCount() << "\n";
+        // only show the full details if it playuer1's turn (current==1) or if revealed/remembered
+        for (auto const &[id, link] : p1->getLinks())
+        {
+            std::cout << id << ": ";
+            if (current->getId() == 1 || current->knowsOpponentLink(id) || link->isRevealed())
+            {
+                char t = (link->getType() == LinkType::Virus ? 'V' : 'D');
+                std::cout << t << link->getStrength();
+            }
+            else
+            {
+                std::cout << "?";
+            }
+            std::cout << " ";
         }
         std::cout << "\n";
 
-        //display board
+        // to print the board (player 1's links always on topm, player 2 at the bottom)
         std::cout << "========\n";
-        for (int r = 0; r < 8; ++r) {
-            for (int c = 0; c < 8; ++c) {
+        for (int r = 0; r < 8; ++r)
+        {
+            for (int c = 0; c < 8; ++c)
+            {
                 const Cell &cell = board.at(r, c);
 
-                // 1) Server ports
-                if (cell.getCellType() == CellType::ServerPort) {
+                if (cell.getCellType() == CellType::ServerPort)
+                {
                     std::cout << 'S';
                 }
-                // check for links (takes priority over firewall)
-                else if (cell.getLink()) {
-                    Link* link = cell.getLink();
+                else if (Link *link = cell.getLink())
+                {
                     std::cout << link->getId();
                 }
-                // 3) Firewall present (no link)
-                else if (cell.getCellType() == CellType::Firewall) {
-                    Player* owner = cell.getFirewallOwner();
-                    if (owner) {
-                        std::cout << (owner->getId() == 1 ? 'm' : 'w');
-                    } else {
-                        // add this as a safety, but it should never happen
-                        std::cout << '.';
-                    }
+                else if (cell.getCellType() == CellType::Firewall)
+                {
+                    Player *owner = cell.getFirewallOwner();
+                    std::cout << (owner
+                                      ? (owner->getId() == 1 ? 'm' : 'w')
+                                      : '.');
                 }
-                // empty space
-                else {
+                else
+                {
                     std::cout << '.';
                 }
             }
@@ -77,31 +135,34 @@ void TextDisplay::notify(GameModel &model, ChangeEvent event)
         }
         std::cout << "========\n";
 
-        //display opponent info
-        std::cout << "Player " << (viewerId == 1 ? 2 : 1) << ":\n";
-        std::cout << "Downloaded: " << opponent->getDataDownloadCount() << "D, " 
-                  << opponent->getVirusDownloadCount() << "V\n";
-        std::cout << "Abilities: " << opponent->getUnusedAbilityCount() << "\n";
-
-        //display opponent's links (known information only)
-        const auto& oppLinks = opponent->getLinks();
-        for (const auto& pair : oppLinks) {
-            char id = pair.first;
-            Link* link = pair.second;
-            
+        // print PLAYER 2's information
+        std::cout << "Player 2";
+        if (current->getId() == 2)
+        {
+            std::cout << " (Current Player)";
+        }
+        std::cout << ":\n";
+        std::cout << "Downloaded: "
+                  << p2->getDataDownloadCount() << "D, "
+                  << p2->getVirusDownloadCount() << "V\n";
+        std::cout << "Abilities: "
+                  << p2->getUnusedAbilityCount() << "\n";
+        for (auto const &[id, link] : p2->getLinks())
+        {
             std::cout << id << ": ";
-            
-            //check if we know this opponent link
-            if (viewer->knowsOpponentLink(id) || link->isRevealed()) {
-                char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
-                std::cout << typeChar << link->getStrength();
-            } else {
+            // only show link info if current player is player 2 OR if link's are revealed
+            if (current->getId() == 2 || current->knowsOpponentLink(id) || link->isRevealed())
+            {
+                char t = (link->getType() == LinkType::Virus ? 'V' : 'D');
+                std::cout << t << link->getStrength();
+            }
+            else
+            {
                 std::cout << "?";
             }
             std::cout << " ";
         }
         std::cout << "\n\n";
-        
         break;
     }
 
@@ -110,7 +171,7 @@ void TextDisplay::notify(GameModel &model, ChangeEvent event)
         break;
 
     default:
-        // ignore other events
+        // ignore everything else
         break;
     }
 }

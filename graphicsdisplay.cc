@@ -99,16 +99,35 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
     return;
   }
 
-  //DownloadOccurred: we don’t have “old/new” here, so just full redraw
   if (event == ChangeEvent::DownloadOccurred) {
-    drawPlayerInfo(model);
-    drawGrid();
-    //re‐build both buffers (or at least the active one + keep buffer2 in sync)
-    drawBoardToPixmap(buffer1, model);
-    if (buffer2Built) drawBoardToPixmap(buffer2, model);
+    int activeViewer = viewerId;
+    //rebuild both buffers with their respective perspectives
+    for (int pid = 1; pid <= 2; ++pid) {
+      setViewerId(pid);
+      Pixmap pix = (pid == 1 ? buffer1 : buffer2);
+      Drawable saved = window->getDrawable();
+      window->setDrawable(pix);
+      //clear and redraw everything for this perspective
+      window->clear();
+      drawGrid();
+      drawPlayerInfo(model);
+  
+      //draw all cells with this player's perspective
+      for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+          drawCell(r, c, model);
+        }
+      }
+      window->setDrawable(saved);
+    }
+    //mark buffer2 as built
+    buffer2Built = true;
+    //restore active viewer
+    setViewerId(activeViewer);
+    //update snapshot and blit the correct buffer
     lastSnap = captureSnapshot(model);
     window->copyPixmap(
-      viewerId == 1 ? buffer1 : buffer2,
+      activeViewer == 1 ? buffer1 : buffer2,
       0,0,
       window->getWidth(), window->getHeight(),
       0,0

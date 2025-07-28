@@ -13,10 +13,12 @@ void Polarize::execute(GameModel& model, vector<string> args) {
     if (args.size() < 1) throw invalid_argument("Polarize: missing linkID");
     char linkID = args[0][0];
 
-    // TODO: Find the link (could be on either player)
-    // Link* link = model.findLink(linkID);
-    // if (!link) throw invalid_argument("Polarize: link not found");
+    Link* link = model.findLinkById(linkID);
+    if (!link) throw invalid_argument("Polarize: link not found");
+    if (!model.isLinkOnBoard(link)) throw invalid_argument("Polarize: link is not currently on the board");
 
-    // link->switchType();
-    // used = true;
+    // Switch the link's type
+    link->switchType();
+
+    markUsed();
 }

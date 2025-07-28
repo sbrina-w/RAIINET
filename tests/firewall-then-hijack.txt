@@ -1,6 +1,0 @@
-ability 5
-move d down
-ability 1 D
-move E up
-ability 3 4 3
-ability 1 D up

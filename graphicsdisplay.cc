@@ -66,7 +66,17 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
     if(!changedCells.empty()) {
       //minimal redraw in both buffers
       updateBuffersWithChangedCells(changedCells, model);
-      //blit only the active buffer
+    } else {
+      //redraw player info for ability count decrease (download and move will have updated cells)
+      for (int pid = 1; pid <= 2; ++pid) {
+        Pixmap pix = (pid==1?buffer1:buffer2);
+        auto oldD = window->getDrawable();
+        window->setDrawable(pix);
+        drawPlayerInfo(model);
+        window->setDrawable(oldD);
+      }
+    }
+    //blit only the active buffer
       Pixmap show = (viewerId == 1 ? buffer1 : buffer2);
       window->copyPixmap(
         show,
@@ -74,7 +84,6 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
         window->getWidth(), window->getHeight(),
         0, 0
       );
-    }
     return;
   }
 
@@ -139,67 +148,80 @@ void GraphicsDisplay::drawGrid() {
 
 //info panel (always on-screen)
 void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
-  Player* viewer = model.getPlayer(viewerId);
-  Player* opponent = model.getPlayer(viewerId == 1 ? 2 : 1);
-  if (!viewer || !opponent) return;
+  Player* current = model.getCurrentPlayer();
+  Player* p1 = model.getPlayer(1);
+  Player* p2 = model.getPlayer(2);
+  if (!current || !p1 || !p2) return;
 
   //clear the info areas
   window->fillRectangle(0, 0, window->getWidth(), INFO_PANEL_HEIGHT, Xwindow::White);
   window->fillRectangle(0, window->getHeight() - INFO_PANEL_HEIGHT, 
                        window->getWidth(), INFO_PANEL_HEIGHT, Xwindow::White);
 
-  //display current player info (top)
+  //display Player 1 info (always on top)
   ostringstream s1;
-  s1 << "Player " << viewerId << ":";
+  s1 << "Player 1";
+  if (current->getId() == 1) {
+      s1 << " (Current Player)";
+  }
+  s1 << ":";
   window->drawString(10, 20, s1.str(), Xwindow::Black);
   
   ostringstream s2;
-  s2 << "Downloaded: " << viewer->getDataDownloadCount() << "D, " 
-     << viewer->getVirusDownloadCount() << "V";
+  s2 << "Downloaded: " << p1->getDataDownloadCount() << "D, " 
+     << p1->getVirusDownloadCount() << "V";
   window->drawString(10, 35, s2.str(), Xwindow::Black);
   
   ostringstream s3;
-  s3 << "Abilities: " << viewer->getUnusedAbilityCount();
+  s3 << "Abilities: " << p1->getUnusedAbilityCount();
   window->drawString(10, 50, s3.str(), Xwindow::Black);
 
-  //display this player's links with their actual values
+  //display Player 1's links
   int x = 10, y = 65;
-  const auto& myLinks = viewer->getLinks();
-  for (const auto& pair : myLinks) {
+  const auto& p1Links = p1->getLinks();
+  for (const auto& pair : p1Links) {
       char id = pair.first;
       Link* link = pair.second;
-      char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
-      int color = (typeChar == 'V') ? Xwindow::Red : Xwindow::DarkGreen;
       std::string idStr(1, id);
-      std::string typeStr = std::string(1, typeChar) + std::to_string(link->getStrength());
       window->drawString(x, y, idStr + ": ", Xwindow::Black);
-      window->drawString(x + 20, y, typeStr, color);
+      if (current->getId() == 1 || current->knowsOpponentLink(id) || link->isRevealed()) {
+          char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
+          int color = (typeChar == 'V') ? Xwindow::Red : Xwindow::DarkGreen;
+          std::string typeStr = std::string(1, typeChar) + std::to_string(link->getStrength());
+          window->drawString(x + 20, y, typeStr, color);
+      } else {
+          window->drawString(x + 20, y, "?", Xwindow::Black);
+      }
       x += 40; // adjust spacing as needed
   }
 
-  //display opponent info (bottom)
+  //display Player 2 info (always on bottom)
   ostringstream s5;
-  s5 << "Player " << (viewerId == 1 ? 2 : 1) << ":";
+  s5 << "Player 2";
+  if (current->getId() == 2) {
+      s5 << " (Current Player)";
+  }
+  s5 << ":";
   window->drawString(10, window->getHeight() - 65, s5.str(), Xwindow::Black);
   
   ostringstream s6;
-  s6 << "Downloaded: " << opponent->getDataDownloadCount() << "D, " 
-     << opponent->getVirusDownloadCount() << "V";
+  s6 << "Downloaded: " << p2->getDataDownloadCount() << "D, " 
+     << p2->getVirusDownloadCount() << "V";
   window->drawString(10, window->getHeight() - 50, s6.str(), Xwindow::Black);
   
   ostringstream s7;
-  s7 << "Abilities: " << opponent->getUnusedAbilityCount();
+  s7 << "Abilities: " << p2->getUnusedAbilityCount();
   window->drawString(10, window->getHeight() - 35, s7.str(), Xwindow::Black);
 
-  //display opponent's links (known information only)
+  //display Player 2's links
   x = 10;
   y = window->getHeight() - 20;
-  const auto& oppLinks = opponent->getLinks();
-  for (const auto& pair : oppLinks) {
+  const auto& p2Links = p2->getLinks();
+  for (const auto& pair : p2Links) {
       char id = pair.first;
       Link* link = pair.second;
       window->drawString(x, y, std::string(1, id) + ": ", Xwindow::Black);
-      if (viewer->knowsOpponentLink(id) || link->isRevealed()) {
+      if (current->getId() == 2 || current->knowsOpponentLink(id) || link->isRevealed()) {
           char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
           int color = (typeChar == 'V') ? Xwindow::Red : Xwindow::DarkGreen;
           std::string typeStr = std::string(1, typeChar) + std::to_string(link->getStrength());

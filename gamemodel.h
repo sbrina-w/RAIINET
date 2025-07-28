@@ -44,6 +44,7 @@ public:
     bool isLinkOnBoard(Link* link) const;
     void addChangedCell(int row, int col);
     void clearChangedCells();
+    int getWinnerId() const;
 
     //accessors
     Board &getBoard();

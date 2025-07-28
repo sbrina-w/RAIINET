@@ -187,7 +187,24 @@ void GameModel::moveLink(Player* curr, char id, int dir)
     // in bounds so check the cell currently there:
     Cell &dest = board.at(newR, newC);
 
-    //TODO: Handle firewall
+    // for if destination is a firewall cell
+    if (dest.getCellType() == CellType::Firewall) {
+        Player* firewallOwner = dest.getFirewallOwner();
+        if (firewallOwner && firewallOwner != curr) {
+            // only affect opponent links
+            link->reveal();
+            firewallOwner->learnOpponentLink(link->getId(), link);
+
+            if (link->getType() == LinkType::Virus) {
+                // virus is downloaded by its owner (curr)
+                curr->incrementDownload(link->getType());
+                board.at(oldR, oldC).removeLink();
+                notifyObservers(ChangeEvent::DownloadOccurred);
+                return;
+            }
+            // if not a virus, continue with normal movement (could be battle, etc.)
+        }
+    }
 
     // for if destination is a server port
     if (dest.getCellType() == CellType::ServerPort)

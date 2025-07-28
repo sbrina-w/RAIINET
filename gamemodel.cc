@@ -384,3 +384,12 @@ void GameModel::clearChangedCells() {
 const std::vector<std::pair<int, int>>& GameModel::getChangedCells() const {
     return changedCells;
 }
+
+int GameModel::getWinnerId() const {
+    for (Player* player : players) {
+        if (player->getDataDownloadCount() >= 4 || player->getVirusDownloadCount() >= 4) {
+            return player->getId();
+        }
+    }
+    return 0; // 0 means no winner yet
+}

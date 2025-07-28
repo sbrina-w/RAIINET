@@ -1,0 +1,12 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+move d down
+move D up
+ability 1 d
+move d down
+move D up
+move d down
+
+# move d down
+# move D up
+# move d down
+# Tested: jumps over obstacle, never reaches server port but jumps over to the other edge (downloaded by self), effect active until downloaded

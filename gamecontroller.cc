@@ -84,8 +84,8 @@ void GameController::handleMove(char linkId, const std::string& direction) {
     }
     
     try {
-        model.moveLink(linkId, dir);
-        std::cout << "Moved link " << linkId << " " << direction << "\n";
+        model.moveLink(model.getCurrentPlayer(), linkId, dir);
+        std::cout << "Player " << model.getCurrentPlayer()->getId() << " moved link " << linkId << " " << direction << "\n";
         // moveLink(...) already triggers the LinkMoved changeevent, calling TurnEnded would double printing
         // increment turn counter
         model.nextTurn();

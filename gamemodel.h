@@ -28,7 +28,7 @@ public:
     void placeLinksOnBoard();
 
     //game actions
-    void moveLink(char id, int dir);
+    void moveLink(Player* player, char id, int dir);
     void useAbility(int abilityID, const vector<string>& args);
 
     //observer management

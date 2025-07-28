@@ -122,9 +122,8 @@ bool GameModel::isLinkOnBoard(Link* link) const {
     return false;
 }
 
-void GameModel::moveLink(char id, int dir)
+void GameModel::moveLink(Player* curr, char id, int dir)
 {
-    Player *curr = getCurrentPlayer();
     Link *link = curr->getLink(id);
 
     if (!link)

@@ -15,12 +15,22 @@ void Hijack::execute(GameModel& model, vector<string> args) {
     char linkID = args[0][0];
     string direction = args[1];
 
-    // TODO: Find the opponent's link
-    // Link* link = model.getOpponentPlayer()->getLink(linkID);
-    // if (!link) throw invalid_argument("Hijack: link not found");
+    Player* current = model.getCurrentPlayer();
+    Link* link = model.findLinkById(linkID);
 
-    // assume that model.moveLink already handles boosted vs unboosted link
+    if (!link) throw invalid_argument("Hijack: link not found");
+    Player* owner = link->getOwner();
+    if (owner == current) throw invalid_argument("Hijack: can only hijack opponent's link");
+    if (!model.isLinkOnBoard(link)) throw invalid_argument("Hijack: link is not currently on the board");
 
-    // model.moveLink(linkID, direction);
-    // used = true;
+    int dir = -1;
+    if (direction == "up") dir = 0;
+    else if (direction == "down") dir = 1;
+    else if (direction == "left") dir = 2;
+    else if (direction == "right") dir = 3;
+    else throw invalid_argument("Hijack: invalid direction (must be 'up', 'down', 'left', or 'right')");
+
+    model.moveLink(owner, linkID, dir);
+
+    markUsed();
 }

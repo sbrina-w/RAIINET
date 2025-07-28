@@ -22,12 +22,10 @@ GraphicsDisplay::GraphicsDisplay(int viewerId)
    buffer1 = window->makePixmap();
    buffer2 = window->makePixmap();
   //prerender grid once into buffer1
-  {
-    Drawable oldD = window->getDrawable();
-    window->setDrawable(buffer1);
-    drawGrid();
-    window->setDrawable(oldD);
-  }
+  Drawable oldD = window->getDrawable();
+  window->setDrawable(buffer1);
+  drawGrid();
+  window->setDrawable(oldD);
 }
 
 GraphicsDisplay::~GraphicsDisplay() {
@@ -58,75 +56,29 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
       window->getWidth(), window->getHeight(),
       0,0
     );
-    lastSnap = captureSnapshot(model);
     buffer2Built = false;
     return;
   }
 
-  //LinkMoved: update two cells in both buffers, but each using its own perspective
-  if (event == ChangeEvent::LinkMoved)
-  {
-    //remember active
-    int activeViewer = viewerId;
-
-    //update both buffers
-    for (int pid = 1; pid <= 2; ++pid) {
-      //set perspective to pid
-      setViewerId(pid);
-      Pixmap pix = (pid == 1 ? buffer1 : buffer2);
-      Drawable saved = window->getDrawable();
-      window->setDrawable(pix);
-
-      //redraw info panel for this perspective
-      drawPlayerInfo(model);
-      
-      //coordinates that moved
-      int oldR = model.getLastOldR(), oldC = model.getLastOldC();
-      int newR = model.getLastNewR(), newC = model.getLastNewC();
-      
-      //draw both old cell and new cell under pid's reveal rules
-      drawCell(oldR, oldC, model);
-      drawCell(newR, newC, model);
-      window->setDrawable(saved);
+  //update all changed cells in both buffers, but each using its own perspective
+  if (event == ChangeEvent::LinkMoved || event == ChangeEvent::DownloadOccurred || event == ChangeEvent::AbilityUsed) {
+    const auto& changedCells = model.getChangedCells();
+    if(!changedCells.empty()) {
+      //minimal redraw in both buffers
+      updateBuffersWithChangedCells(changedCells, model);
+      //blit only the active buffer
+      Pixmap show = (viewerId == 1 ? buffer1 : buffer2);
+      window->copyPixmap(
+        show,
+        0, 0,
+        window->getWidth(), window->getHeight(),
+        0, 0
+      );
     }
-
-    //restore active viewer
-    setViewerId(activeViewer);
-
-    //blit only the active buffer
-    Pixmap show = (activeViewer == 1 ? buffer1 : buffer2);
-    window->copyPixmap(
-      show,
-      0, 0,
-      window->getWidth(), window->getHeight(),
-      0, 0
-    );
     return;
   }
 
-  if (event == ChangeEvent::DownloadOccurred) {
-    int activeViewer = viewerId;
-    //rebuild both buffers with their respective perspectives
-    for (int pid = 1; pid <= 2; ++pid) {
-      setViewerId(pid);
-      drawBoardToPixmap(pid == 1 ? buffer1 : buffer2, model);
-    }
-    //mark buffer2 as built
-    buffer2Built = true; 
-    //restore active viewer
-    setViewerId(activeViewer);
-    //update snapshot and blit the correct buffer
-    lastSnap = captureSnapshot(model);
-    window->copyPixmap(
-      activeViewer == 1 ? buffer1 : buffer2,
-      0,0,
-      window->getWidth(), window->getHeight(),
-      0,0
-    );
-    return;
-  }
-
-  //TurnEnded or AbilityUsed: instant blit the other pixmap
+  //TurnEnded: instant blit the other pixmap
   {
     //if switching to player 2 and buffer2 not built
     if (viewerId == 2 && !buffer2Built) {
@@ -158,33 +110,6 @@ void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {
       "GAME OVER"
     );
   }
-}
-
-//build 8×8 char map
-vector<vector<char>> GraphicsDisplay::captureSnapshot(GameModel& model) {
-  vector<vector<char>> snap(8, vector<char>(8, '.'));
-  const Board& b     = model.getBoard();
-  Player*      viewr = model.getPlayer(viewerId);
-
-  for (int r = 0; r < 8; ++r) {
-    for (int c = 0; c < 8; ++c) {
-      const Cell& cell = b.at(r,c);
-      char ch = '.';
-      if (cell.getCellType() == CellType::ServerPort) {
-        ch = 'S';
-      } else if (cell.getLink()) {
-        Link* L = cell.getLink();
-        if (viewr->knowsOpponentLink(L->getId()) ||
-            L->isRevealed() ||
-            L->getOwner() == viewr)
-          ch = L->getId();
-        else
-          ch = '?';
-      }
-      snap[r][c] = ch;
-    }
-  }
-  return snap;
 }
 
 //draws grid into current drawable
@@ -324,4 +249,32 @@ void GraphicsDisplay::drawCell(int row,int col,GameModel& model) {
 int GraphicsDisplay::getLinkColor(Link* link,bool isRevealed,bool isOwner) const {
   if (!isRevealed && !isOwner) return Xwindow::Black;
   return link->getType()==LinkType::Virus ? Xwindow::Red : Xwindow::Green;
+}
+
+//helper for redrawing changed cells
+void GraphicsDisplay::updateBuffersWithChangedCells(
+    const vector<pair<int,int>>& changedCells,
+    GameModel& model)
+{
+    //remember active
+    int activeViewer = viewerId;
+    //update both buffers
+    for (int pid = 1; pid <= 2; ++pid) {
+        //set persepctive to pid
+        setViewerId(pid);
+        Pixmap pix = (pid==1?buffer1:buffer2);
+        auto oldD = window->getDrawable();
+        window->setDrawable(pix);
+
+        //redraw info panel for current perspective
+        drawPlayerInfo(model);
+
+        //redraw only changed cells
+        for (auto [r,c] : changedCells) {
+            drawCell(r,c,model);
+        }
+        window->setDrawable(oldD);
+    }
+    //restore active viewer
+    setViewerId(activeViewer);
 }

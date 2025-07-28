@@ -177,6 +177,9 @@ void GameModel::moveLink(Player* curr, char id, int dir)
         //downloading our own link (no need to reveal anything as we know our own link)
         curr->incrementDownload(link->getType());
         board.at(oldR, oldC).removeLink();
+        //mark old cell as changed (link downloaded/removed from display)
+        clearChangedCells();
+        addChangedCell(oldR, oldC);
         notifyObservers(ChangeEvent::DownloadOccurred);
         return;
     }
@@ -202,6 +205,9 @@ void GameModel::moveLink(Player* curr, char id, int dir)
         opp->learnOpponentLink(link->getId(), link); //opponent gets to learn it
         opp->incrementDownload(link->getType()); //then they increment their download count
         board.at(oldR, oldC).removeLink();
+        //mark old cell as changed
+        clearChangedCells();
+        addChangedCell(oldR, oldC);
         notifyObservers(ChangeEvent::DownloadOccurred);
         return;
     }
@@ -236,6 +242,10 @@ void GameModel::moveLink(Player* curr, char id, int dir)
             dest.removeLink();
             dest.setLink(link);
             board.at(oldR, oldC).removeLink();
+            //mark both cells as changed (old position cleared, new position has winning link)
+            clearChangedCells();
+            addChangedCell(oldR, oldC);
+            addChangedCell(newR, newC);
             notifyObservers(ChangeEvent::DownloadOccurred);
         }
         else
@@ -243,6 +253,8 @@ void GameModel::moveLink(Player* curr, char id, int dir)
             // you lose ⇒ so opponent (winner) downloads your link
             opp->incrementDownload(link->getType());
             board.at(oldR, oldC).removeLink();
+            clearChangedCells();
+            addChangedCell(oldR, oldC);
             notifyObservers(ChangeEvent::DownloadOccurred);
         }
     }
@@ -251,10 +263,9 @@ void GameModel::moveLink(Player* curr, char id, int dir)
         // regular move
         dest.setLink(link);
         board.at(oldR, oldC).removeLink();
-        lastOldR = oldR;
-        lastOldC = oldC;
-        lastNewR = newR;
-        lastNewC = newC;
+        clearChangedCells();
+        addChangedCell(oldR, oldC);
+        addChangedCell(newR, newC);
         notifyObservers(ChangeEvent::LinkMoved);
     }
 }
@@ -338,7 +349,14 @@ Link* GameModel::findLinkById(char linkId) const {
     return nullptr;
 }
 
-int GameModel::getLastOldR() const { return lastOldR; }
-int GameModel::getLastOldC() const { return lastOldC; }
-int GameModel::getLastNewR() const { return lastNewR; }
-int GameModel::getLastNewC() const { return lastNewC; }
+void GameModel::addChangedCell(int row, int col) {
+    changedCells.push_back({row, col});
+}
+
+void GameModel::clearChangedCells() {
+    changedCells.clear();
+}
+
+const std::vector<std::pair<int, int>>& GameModel::getChangedCells() const {
+    return changedCells;
+}

@@ -28,6 +28,8 @@ void Download::execute(GameModel& model, vector<string> args) {
         for (int c = 0; c < 8 && !removed; ++c) {
             if (board.at(r, c).getLink() == link) {
                 board.at(r, c).removeLink();
+                model.clearChangedCells();
+                model.addChangedCell(r, c);
                 removed = true;
             }
         }

@@ -18,7 +18,7 @@ private:
     std::vector<Player *> players;
     // continuously incremented, mod by number of players to get cur player
     int currentTurn; 
-    int lastOldR, lastOldC, lastNewR, lastNewC;
+    vector<pair<int, int>> changedCells;
 
 public:
     GameModel();
@@ -42,6 +42,8 @@ public:
     Player* getPlayer(int playerId) const;
     void nextTurn();
     bool isLinkOnBoard(Link* link) const;
+    void addChangedCell(int row, int col);
+    void clearChangedCells();
 
     //accessors
     Board &getBoard();
@@ -49,10 +51,7 @@ public:
     int getCurrentTurn() const;
     Player* getCurrentPlayer() const;
     Link* findLinkById(char linkId) const;
-    int getLastOldR() const;
-    int getLastOldC() const;
-    int getLastNewR() const;
-    int getLastNewC() const;
+    const vector<pair<int, int>>& getChangedCells() const;
 };
 
 #endif

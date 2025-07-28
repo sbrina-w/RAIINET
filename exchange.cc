@@ -47,4 +47,9 @@ void Exchange::execute(GameModel& model, vector<string> args) {
     board.at(r2, c2).setLink(link1);
 
     markUsed();
+    
+    //mark both cells as changed
+    model.clearChangedCells();
+    model.addChangedCell(r1, c1);
+    model.addChangedCell(r2, c2);
 }

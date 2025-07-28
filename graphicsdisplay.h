@@ -24,11 +24,8 @@ private:
   int           viewerId;  //1 or 2
   Pixmap        buffer1;   //off-screen for player 1
   Pixmap        buffer2;   //off-screen for player 2
-  std::vector<std::vector<char>> lastSnap;
   bool buffer2Built = false;
-
-  //capture an 8×8 char-map of what's visible for current viewer
-  std::vector<std::vector<char>> captureSnapshot(GameModel& model);
+  void updateBuffersWithChangedCells(const std::vector<std::pair<int,int>>& changedCells, GameModel& model);
 
   //layout constants
   static const int CELL_SIZE         = 60;

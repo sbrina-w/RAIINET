@@ -324,6 +324,7 @@ void GameModel::useAbility(int abilityID, const std::vector<std::string>& args) 
     ability->execute(*this, args);
 
     player->incrementAbilitiesUsed();
+    player->decrementAbilitiesRemaining();
 
     notifyObservers(ChangeEvent::AbilityUsed);
 }

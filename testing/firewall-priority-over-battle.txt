@@ -1,0 +1,8 @@
+ability 2 4 3
+move d down
+move E up
+move d down
+move E up
+move e down
+move E left
+# move d down

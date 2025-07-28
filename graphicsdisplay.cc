@@ -16,7 +16,7 @@ GraphicsDisplay::GraphicsDisplay(int viewerId)
   : viewerId(viewerId)
 {
    int w = BOARD_OFFSET_X*2 + CELL_SIZE*8;
-   int h = BOARD_OFFSET_Y*2 + CELL_SIZE*8 + INFO_PANEL_HEIGHT*2;
+   int h = BOARD_OFFSET_HEIGHT_Y*2 + CELL_SIZE*8 + INFO_PANEL_HEIGHT*2;
    window = new Xwindow(w, h);
    //allocate two pixmaps
    buffer1 = window->makePixmap();

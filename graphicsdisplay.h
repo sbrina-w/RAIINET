@@ -28,11 +28,12 @@ private:
   void updateBuffersWithChangedCells(const std::vector<std::pair<int,int>>& changedCells, GameModel& model);
 
   //layout constants
-  static const int CELL_SIZE         = 60;
-  static const int BOARD_OFFSET_X    = 50;
-  static const int BOARD_OFFSET_Y    = 100;
-  static const int INFO_PANEL_HEIGHT = 80;
-  
+  static const int CELL_SIZE                = 60;
+  static const int BOARD_OFFSET_X           = 50;
+  static const int BOARD_OFFSET_Y           = 170;
+  static const int BOARD_OFFSET_HEIGHT_Y    = 100;
+  static const int INFO_PANEL_HEIGHT        = 80;
+
   //core draw routines:
   void drawGrid();
   void drawPlayerInfo(GameModel& model);

@@ -122,6 +122,19 @@ void GraphicsDisplay::drawGrid() {
     window->drawLine(BOARD_OFFSET_X, y,
                      BOARD_OFFSET_X + 8*CELL_SIZE, y);
   }
+  // Draw row labels (left of the board)
+  for (int r = 0; r < 8; ++r) {
+      int y = BOARD_OFFSET_Y + r * CELL_SIZE + CELL_SIZE / 2 + 5; // +5 for font baseline adjustment
+      int x = BOARD_OFFSET_X - 20; // 20 pixels left of the grid
+      window->drawString(x, y, std::to_string(r), Xwindow::White);
+  }
+
+  // Draw column labels (below the board)
+  for (int c = 0; c < 8; ++c) {
+      int x = BOARD_OFFSET_X + c * CELL_SIZE + CELL_SIZE / 2 - 5; // -5 for centering
+      int y = BOARD_OFFSET_Y + 8 * CELL_SIZE + 20; // 20 pixels below the grid
+      window->drawString(x, y, std::to_string(c), Xwindow::White);
+  }
 }
 
 //info panel (always on-screen)

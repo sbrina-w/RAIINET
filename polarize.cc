@@ -25,6 +25,26 @@ void Polarize::execute(GameModel& model, vector<string> args) {
                 // Switch the link's type
                 link->switchType();
                 markUsed();
+
+                // Check for firewall effect after polarization
+                Cell& cell = board.at(r, c);
+                if (cell.getCellType() == CellType::Firewall) {
+                    Player* firewallOwner = cell.getFirewallOwner();
+                    if (firewallOwner && firewallOwner != link->getOwner() && link->getType() == LinkType::Virus) {
+                        // Reveal the link and let the firewall owner learn it
+                        // should have already happened, since the cell had to previously move onto the firewall
+                        // do this just to be safe and consistent (similar pattern for exchange)
+                        link->reveal();
+                        firewallOwner->learnOpponentLink(link->getId(), link);
+                        // Download the link for its owner and remove from board
+                        link->getOwner()->incrementDownload(LinkType::Virus);
+                        cell.removeLink();
+                        model.clearChangedCells();
+                        model.addChangedCell(r, c);
+                        model.notify(ChangeEvent::DownloadOccurred);
+                        return;
+                    }
+                }
                 
                 //mark cell as changed for graphics update
                 model.clearChangedCells();

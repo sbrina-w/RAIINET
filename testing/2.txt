@@ -1,0 +1,43 @@
+# Abilities for Player 1:
+#   1. LinkBoost
+#   2. Firewall
+#   3. Download
+#   4. Scan
+#   5. Polarize
+# Abilities for Player 2:
+#   1. LinkBoost
+#   2. Firewall
+#   3. Download
+#   4. Scan
+#   5. Polarize
+# Each player: (optional ability) then move, then other player's turn
+
+# Player 1 boosts link a
+# LinkBoost on a
+ability 1 a    
+move a down
+
+# Player 2 scans Player 1's a
+# Scan a (should reveal type/strength)
+ability 4 a    
+move A up
+
+# Player 1 polarizes their own b (should flip type)
+# Polarize b (flip type)
+ability 5 b   
+move b down
+
+# Player 2 boosts link B
+# LinkBoost on B
+ability 1 B    
+move B up
+
+# Player 1 scans Player 2's B
+# Scan B (should reveal type/strength)
+ability 4 B    
+move c down
+
+# Player 2 downloads Player 1's b (must be on board and not owned by Player 2)
+# Download b (remove from board, increment download count)
+ability 3 b    
+move C left

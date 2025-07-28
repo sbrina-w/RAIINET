@@ -171,7 +171,7 @@ void GameController::handleSequence(const std::string& filename) {
         } else if (command == "ability") {
             int abilityId;
             if (iss >> abilityId) {
-                // Parse additional parameters for abilities that need them
+                // parse additional parameters for abilities that need them
                 std::vector<std::string> args;
                 std::string arg;
                 while (iss >> arg) {
@@ -183,7 +183,7 @@ void GameController::handleSequence(const std::string& filename) {
             }
         } else if (command == "board"){
             handleBoard();
-        //recursively also handle sequence to other files
+        // recursively also handle sequence to other files
         } else if (command == "sequence") {
             std::string filename;
             if (iss >> filename) {

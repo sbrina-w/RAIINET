@@ -2,6 +2,8 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <ctime>
+#include <iomanip>
 
 GameController::GameController(GameModel& model) : model(model) {}
 
@@ -18,12 +20,13 @@ void GameController::play() {
         
         if (command == "quit" || line.empty()) {
             std::cout << "Game ended.\n";
+            writeCommandHistory();
             break;
         }
         else if (command == "move") {
             std::string linkId, direction;
             if (iss >> linkId >> direction) {
-                handleMove(linkId[0], direction);
+                handleMove(linkId[0], direction, line);
             } else {
                 std::cout << "Usage: move <link> <direction>\n";
                 std::cout << "Example: move a up\n";
@@ -41,7 +44,7 @@ void GameController::play() {
                 while (iss >> arg) {
                     args.push_back(arg);
                 }
-                handleAbility(abilityId, args);
+                handleAbility(abilityId, args, line);
             } else {
                 std::cout << "Usage: ability <id> [additional parameters]\n";
             }
@@ -66,31 +69,31 @@ void GameController::play() {
             std::cout << "Player " << model.getCurrentPlayer()->getId() << "'s turn > ";
         } else {
             std::cout << "Game Over!\n";
+            writeCommandHistory();
             break;
         }
     }
 }
 
-void GameController::handleMove(char linkId, const std::string& direction) {
+bool GameController::handleMove(char linkId, const std::string& direction, const std::string& originalLine) {
     int dir = -1;
-    
     if (direction == "up") dir = 0;
     else if (direction == "down") dir = 1;
     else if (direction == "left") dir = 2;
     else if (direction == "right") dir = 3;
     else {
         std::cout << "Invalid direction. Use: up, down, left, right\n";
-        return;
+        return false;
     }
-    
     try {
         model.moveLink(model.getCurrentPlayer(), linkId, dir);
         std::cout << "Player " << model.getCurrentPlayer()->getId() << " moved link " << linkId << " " << direction << "\n";
-        // moveLink(...) already triggers the LinkMoved changeevent, calling TurnEnded would double printing
-        // increment turn counter
         model.nextTurn();
+        commandHistory.push_back(originalLine); // Only push if successful
+        return true;
     } catch (const std::exception& e) {
         std::cout << "Error moving link: " << e.what() << "\n";
+        return false;
     }
 }
 
@@ -123,12 +126,15 @@ void GameController::handleAbilities() {
     }
 }
 
-void GameController::handleAbility(int abilityId, const std::vector<std::string>& args) {
+bool GameController::handleAbility(int abilityId, const std::vector<std::string>& args, const std::string& originalLine) {
     try {
         model.useAbility(abilityId, args);
         std::cout << "Player " << model.getCurrentPlayer()->getId() << " Used ability " << abilityId << "\n";
+        commandHistory.push_back(originalLine); // only push if successful
+        return true;
     } catch (const std::exception& e) {
         std::cout << "Error using ability! " << e.what() << "\n";
+        return false;
     }
 }
 
@@ -157,11 +163,12 @@ void GameController::handleSequence(const std::string& filename) {
         
         if (command == "quit") {
             std::cout << "Game ended.\n";
+            writeCommandHistory();
             break;
         } else if (command == "move") {
             std::string linkId, direction;
             if (iss >> linkId >> direction) {
-                handleMove(linkId[0], direction);
+                handleMove(linkId[0], direction, line);
             } else {
                 std::cout << "Usage: move <link> <direction>\n";
                 std::cout << "Example: move a up\n";
@@ -177,7 +184,7 @@ void GameController::handleSequence(const std::string& filename) {
                 while (iss >> arg) {
                     args.push_back(arg);
                 }
-                handleAbility(abilityId, args);
+                handleAbility(abilityId, args, line);
             } else {
                 std::cout << "Usage: ability <id> [additional parameters]\n";
             }
@@ -198,6 +205,7 @@ void GameController::handleSequence(const std::string& filename) {
         
         if (model.isGameOver()) {
             std::cout << "Game ended during sequence execution.\n";
+            writeCommandHistory();
             break;
         }
     }
@@ -214,4 +222,13 @@ void GameController::notify(ChangeEvent event) {
         default:
             break;
     }
+}
+
+void GameController::writeCommandHistory() {
+    std::string filename = "tests/history.txt";
+    std::ofstream out(filename);
+    for (const auto& cmd : commandHistory) {
+        out << cmd << std::endl;
+    }
+    std::cout << "Command history written to " << filename << std::endl;
 }

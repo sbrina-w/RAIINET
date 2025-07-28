@@ -67,18 +67,14 @@ bool GameSetup::parseCommandLine(int argc, char* argv[]) {
     return true;
 }
 
-// todo: limit of up to 2 abilities per type
 bool GameSetup::parseAbilityString(const string& abilities) {
-    //only 5 abilities
-    if (abilities.length() != 5) {
-        return false;
-    }
-    //check for valid ability letters
-    set<char> validAbilities = {'L', 'F', 'D', 'S', 'P', 'E', 'G', 'H'};
+    if (abilities.length() != 5) return false;
+    std::map<char, int> counts;
+    std::set<char> validAbilities = {'L', 'F', 'D', 'S', 'P', 'E', 'G', 'H'};
     for (char c : abilities) {
-        if (validAbilities.find(c) == validAbilities.end()) {
-            return false;
-        }
+        if (validAbilities.find(c) == validAbilities.end()) return false;
+        counts[c]++;
+        if (counts[c] > 2) return false; // max 2 of each kind
     }
     return true;
 }

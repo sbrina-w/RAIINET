@@ -173,7 +173,11 @@ void GameModel::moveLink(Player* curr, char id, int dir)
             throw std::invalid_argument("Cannot move off that edge");
         }
 
-        //downloading our own link (no need to reveal anything as we know our own link)
+        Player *opp = getPlayer(curr->getId() == 1 ? 2 : 1);
+
+        // downloading your own link after moving it off the edge, reveal it to oppo for game consistency
+        link->reveal();
+        opp->learnOpponentLink(link->getId(), link); // opponent gets to learn it
         curr->incrementDownload(link->getType());
         board.at(oldR, oldC).removeLink();
         notifyObservers(ChangeEvent::DownloadOccurred);

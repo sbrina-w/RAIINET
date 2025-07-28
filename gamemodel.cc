@@ -203,6 +203,8 @@ void GameModel::moveLink(Player* curr, char id, int dir)
                 // virus is downloaded by its owner (curr)
                 curr->incrementDownload(link->getType());
                 board.at(oldR, oldC).removeLink();
+                clearChangedCells();
+                addChangedCell(oldR, oldC);
                 notifyObservers(ChangeEvent::DownloadOccurred);
                 return;
             }

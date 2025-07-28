@@ -35,6 +35,7 @@ void Firewall::execute(GameModel& model, vector<string> args) {
     // Place the firewall
     cell.setFirewallOwner(model.getCurrentPlayer());
     cell.setCellType(CellType::Firewall);
-
+    model.clearChangedCells();
+    model.addChangedCell(row, col);
     markUsed();
 }

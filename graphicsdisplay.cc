@@ -247,11 +247,21 @@ void GraphicsDisplay::drawCell(int row,int col,GameModel& model) {
     window->drawString(x+CELL_SIZE/2-2.5,y+CELL_SIZE/2+5,id,Xwindow::White);
   }
   if (cell.getCellType() == CellType::Firewall) {
-    Player* o = cell.getFirewallOwner();
-    if (o) {
-      char f = (o->getId()==1?'m':'w');
-      window->drawString(x+13,y+CELL_SIZE-15,string(1,f),Xwindow::Orange);
-    }
+      Player* o = cell.getFirewallOwner();
+      if (o) {
+          char f = (o->getId()==1 ? 'm' : 'w');
+          window->drawString(x+13, y+CELL_SIZE-15, string(1, f), Xwindow::Orange);
+
+          // Draw an orange border inside the cell (two lines for thickness)
+          for (int inset = 3; inset <= 4; ++inset) {
+              int right = x + CELL_SIZE - inset - 1;
+              int bottom = y + CELL_SIZE - inset - 1;
+              window->drawLine(x+inset, y+inset, right, y+inset, Xwindow::Orange); // top
+              window->drawLine(x+inset, y+inset, x+inset, bottom, Xwindow::Orange); // left
+              window->drawLine(right, y+inset, right, bottom, Xwindow::Orange); // right
+              window->drawLine(x+inset, bottom, right, bottom, Xwindow::Orange); // bottom
+          }
+      }
   }
 
   //cell border

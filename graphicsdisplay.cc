@@ -163,15 +163,19 @@ void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
   window->drawString(10, 50, s3.str(), Xwindow::Black);
 
   //display this player's links with their actual values
-  ostringstream s4;
+  int x = 10, y = 65;
   const auto& myLinks = viewer->getLinks();
   for (const auto& pair : myLinks) {
-    char id = pair.first;
-    Link* link = pair.second;
-    char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
-    s4 << id << ": " << typeChar << link->getStrength() << " ";
+      char id = pair.first;
+      Link* link = pair.second;
+      char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
+      int color = (typeChar == 'V') ? Xwindow::Red : Xwindow::DarkGreen;
+      std::string idStr(1, id);
+      std::string typeStr = std::string(1, typeChar) + std::to_string(link->getStrength());
+      window->drawString(x, y, idStr + ": ", Xwindow::Black);
+      window->drawString(x + 20, y, typeStr, color);
+      x += 40; // adjust spacing as needed
   }
-  window->drawString(10, 65, s4.str(), Xwindow::Black);
 
   //display opponent info (bottom)
   ostringstream s5;
@@ -188,24 +192,23 @@ void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
   window->drawString(10, window->getHeight() - 35, s7.str(), Xwindow::Black);
 
   //display opponent's links (known information only)
-  ostringstream s8;
+  x = 10;
+  y = window->getHeight() - 20;
   const auto& oppLinks = opponent->getLinks();
   for (const auto& pair : oppLinks) {
-    char id = pair.first;
-    Link* link = pair.second;
-    
-    s8 << id << ": ";
-    
-    //check if we know this opponent link
-    if (viewer->knowsOpponentLink(id) || link->isRevealed()) {
-      char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
-      s8 << typeChar << link->getStrength();
-    } else {
-      s8 << "?";
-    }
-    s8 << " ";
+      char id = pair.first;
+      Link* link = pair.second;
+      window->drawString(x, y, std::string(1, id) + ": ", Xwindow::Black);
+      if (viewer->knowsOpponentLink(id) || link->isRevealed()) {
+          char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';
+          int color = (typeChar == 'V') ? Xwindow::Red : Xwindow::DarkGreen;
+          std::string typeStr = std::string(1, typeChar) + std::to_string(link->getStrength());
+          window->drawString(x + 20, y, typeStr, color);
+      } else {
+          window->drawString(x + 20, y, "?", Xwindow::Black);
+      }
+      x += 40; // adjust spacing as needed
   }
-  window->drawString(10, window->getHeight() - 20, s8.str(), Xwindow::Black);
 }
 
 //full‐board draw into pixmap
@@ -261,7 +264,7 @@ void GraphicsDisplay::drawCell(int row,int col,GameModel& model) {
 //colour selection
 int GraphicsDisplay::getLinkColor(Link* link,bool isRevealed,bool isOwner) const {
   if (!isRevealed && !isOwner) return Xwindow::Black;
-  return link->getType()==LinkType::Virus ? Xwindow::Red : Xwindow::Green;
+  return link->getType()==LinkType::Virus ? Xwindow::Red : Xwindow::DarkGreen;
 }
 
 //helper for redrawing changed cells

@@ -10,10 +10,10 @@ class Xwindow {
   Drawable drawable;  // current drawing target
   GC       gc;
   int      width, height;
-  unsigned long colours[6];
+  unsigned long colours[7];
 
 public:
-  enum { White=0, Black, Red, Green, Blue, Orange };
+  enum { White=0, Black, Red, Green, DarkGreen, Blue, Orange };
 
   Xwindow(int width=500, int height=500);
   ~Xwindow();

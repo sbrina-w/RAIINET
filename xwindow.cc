@@ -29,8 +29,8 @@ Xwindow::Xwindow(int width, int height) : width{width}, height{height} {
 
   gc = XCreateGC(d, win, 0, nullptr);
   Colormap cmap = DefaultColormap(d, scr);
-  const char *names[6] = {"white","black","red","green","blue","orange"};
-  for (int i = 0; i < 6; ++i) {
+  const char *names[7] = {"white","black","red","green","darkgreen","blue","orange"};
+  for (int i = 0; i < 7; ++i) {
     XColor col;
     XParseColor(d, cmap, names[i], &col);
     XAllocColor(d, cmap, &col);

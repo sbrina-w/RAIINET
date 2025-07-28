@@ -174,7 +174,11 @@ void GameModel::moveLink(Player* curr, char id, int dir)
             throw std::invalid_argument("Cannot move off that edge");
         }
 
-        //downloading our own link (no need to reveal anything as we know our own link)
+        Player *opp = getPlayer(curr->getId() == 1 ? 2 : 1);
+
+        // downloading your own link after moving it off the edge, reveal it to oppo for game consistency
+        link->reveal();
+        opp->learnOpponentLink(link->getId(), link); // opponent gets to learn it
         curr->incrementDownload(link->getType());
         board.at(oldR, oldC).removeLink();
         //mark old cell as changed (link downloaded/removed from display)
@@ -187,7 +191,24 @@ void GameModel::moveLink(Player* curr, char id, int dir)
     // in bounds so check the cell currently there:
     Cell &dest = board.at(newR, newC);
 
-    //TODO: Handle firewall
+    // for if destination is a firewall cell
+    if (dest.getCellType() == CellType::Firewall) {
+        Player* firewallOwner = dest.getFirewallOwner();
+        if (firewallOwner && firewallOwner != curr) {
+            // only affect opponent links
+            link->reveal();
+            firewallOwner->learnOpponentLink(link->getId(), link);
+
+            if (link->getType() == LinkType::Virus) {
+                // virus is downloaded by its owner (curr)
+                curr->incrementDownload(link->getType());
+                board.at(oldR, oldC).removeLink();
+                notifyObservers(ChangeEvent::DownloadOccurred);
+                return;
+            }
+            // if not a virus, continue with normal movement (could be battle, etc.)
+        }
+    }
 
     // for if destination is a server port
     if (dest.getCellType() == CellType::ServerPort)

@@ -53,12 +53,22 @@ void TextDisplay::notify(GameModel &model, ChangeEvent event)
                 if (cell.getCellType() == CellType::ServerPort) {
                     std::cout << 'S';
                 }
-                //check for links
+                // check for links (takes priority over firewall)
                 else if (cell.getLink()) {
                     Link* link = cell.getLink();
                     std::cout << link->getId();
                 }
-                //empty space
+                // 3) Firewall present (no link)
+                else if (cell.getCellType() == CellType::Firewall) {
+                    Player* owner = cell.getFirewallOwner();
+                    if (owner) {
+                        std::cout << (owner->getId() == 1 ? 'm' : 'w');
+                    } else {
+                        // add this as a safety, but it should never happen
+                        std::cout << '.';
+                    }
+                }
+                // empty space
                 else {
                     std::cout << '.';
                 }

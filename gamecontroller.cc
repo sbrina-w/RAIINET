@@ -155,16 +155,23 @@ void GameController::handleSequence(const std::string& filename) {
         std::string command;
         iss >> command;
         
-        if (command == "move") {
+        if (command == "quit") {
+            std::cout << "Game ended.\n";
+            break;
+        } else if (command == "move") {
             std::string linkId, direction;
             if (iss >> linkId >> direction) {
                 handleMove(linkId[0], direction);
+            } else {
+                std::cout << "Usage: move <link> <direction>\n";
+                std::cout << "Example: move a up\n";
             }
-        }
-        else if (command == "ability") {
+        } else if (command == "abilities") {
+            handleAbilities();
+        } else if (command == "ability") {
             int abilityId;
             if (iss >> abilityId) {
-                // Parse additional parameters for abilities that need them
+                // parse additional parameters for abilities that need them
                 std::vector<std::string> args;
                 std::string arg;
                 while (iss >> arg) {
@@ -174,8 +181,20 @@ void GameController::handleSequence(const std::string& filename) {
             } else {
                 std::cout << "Usage: ability <id> [additional parameters]\n";
             }
+        } else if (command == "board"){
+            handleBoard();
+        // recursively also handle sequence to other files
+        } else if (command == "sequence") {
+            std::string filename;
+            if (iss >> filename) {
+                handleSequence(filename);
+            } else {
+                std::cout << "Usage: sequence <filename>\n";
+            }
+        } else {
+            std::cout << "Unknown command: " << command << "\n";
+            std::cout << "Available commands: move, abilities, ability, board, sequence, quit\n";
         }
-        //todo: other commands
         
         if (model.isGameOver()) {
             std::cout << "Game ended during sequence execution.\n";

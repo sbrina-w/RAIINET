@@ -219,7 +219,7 @@ void GraphicsDisplay::drawCell(int row,int col,GameModel& model) {
 
   if (cell.getCellType() == CellType::ServerPort) {
     window->fillRectangle(x+5,y+5,CELL_SIZE-10,CELL_SIZE-10,Xwindow::Blue);
-    window->drawString(x+CELL_SIZE/2-5,y+CELL_SIZE/2+5,"S",Xwindow::White);
+    window->drawString(x+CELL_SIZE/2-2.5,y+CELL_SIZE/2+5,"S",Xwindow::White);
   }
   else if (cell.getLink()) {
     Link* link = cell.getLink();
@@ -228,13 +228,13 @@ void GraphicsDisplay::drawCell(int row,int col,GameModel& model) {
     int  bg    = getLinkColor(link,rev,isO);
     window->fillRectangle(x+5,y+5,CELL_SIZE-10,CELL_SIZE-10,bg);
     string id(1,link->getId());
-    window->drawString(x+CELL_SIZE/2-5,y+CELL_SIZE/2+5,id,Xwindow::White);
+    window->drawString(x+CELL_SIZE/2-2.5,y+CELL_SIZE/2+5,id,Xwindow::White);
   }
   if (cell.getCellType() == CellType::Firewall) {
     Player* o = cell.getFirewallOwner();
     if (o) {
       char f = (o->getId()==1?'m':'w');
-      window->drawString(x+5,y+CELL_SIZE-15,string(1,f),Xwindow::Red);
+      window->drawString(x+13,y+CELL_SIZE-15,string(1,f),Xwindow::Orange);
     }
   }
 

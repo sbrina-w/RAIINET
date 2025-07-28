@@ -8,6 +8,23 @@ using namespace std;
 
 Exchange::Exchange() : Ability('E') {}
 
+bool Exchange::checkFirewallAfterPlacement(GameModel& model, Board& board, int r, int c, Link* link) {
+    Cell& cell = board.at(r, c);
+    if (cell.getCellType() == CellType::Firewall) {
+        Player* firewallOwner = cell.getFirewallOwner();
+        if (firewallOwner && firewallOwner != link->getOwner() && link->getType() == LinkType::Virus) {
+            link->reveal();
+            firewallOwner->learnOpponentLink(link->getId(), link);
+            link->getOwner()->incrementDownload(LinkType::Virus);
+            cell.removeLink();
+            model.clearChangedCells();
+            model.addChangedCell(r, c);
+            return true;
+        }
+    }
+    return false;
+}
+
 // args[0]: link id 1 (char, e.g. "a")
 // args[1]: link id 2 (char, e.g. "b")
 // Usage: ability <N> <linkID1> <linkID2>
@@ -47,6 +64,11 @@ void Exchange::execute(GameModel& model, vector<string> args) {
     board.at(r2, c2).setLink(link1);
 
     markUsed();
+
+    // Check for firewall effect after placement for both positions
+    // (boolean result not needed for now)
+    checkFirewallAfterPlacement(model, board, r1, c1, link2);
+    checkFirewallAfterPlacement(model, board, r2, c2, link1);
     
     //mark both cells as changed
     model.clearChangedCells();

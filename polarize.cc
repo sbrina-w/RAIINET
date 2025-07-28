@@ -41,7 +41,6 @@ void Polarize::execute(GameModel& model, vector<string> args) {
                         cell.removeLink();
                         model.clearChangedCells();
                         model.addChangedCell(r, c);
-                        model.notify(ChangeEvent::DownloadOccurred);
                         return;
                     }
                 }

@@ -1,0 +1,24 @@
+./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 EEFSD -ability2 EEFSD
+
+ability 1 a A
+# invalid, both links must be owned by same player
+
+ability 1 A B
+# invalid, both links must be owned by same player
+
+ability 1 a a
+# invalid, cannot exchange link with itself
+
+ability 1 a b
+# links a and b swap positions
+
+move d down
+
+ability 5 b
+# player 2 downloads link b, link b is now off the board
+
+move D up
+
+ability 2 a b
+# invalid, both links must be on the board
+

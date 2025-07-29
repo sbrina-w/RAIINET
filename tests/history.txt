@@ -1,8 +1,5 @@
-move d down
-move D up
-ability 1 d
-move d down
-move E up
-move d down
-move D up
-move d down
+ability 1 A
+move b down
+ability 1 b
+move B up
+ability 2 A

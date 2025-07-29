@@ -1,0 +1,13 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+ability 1 A
+# scan unrevealed link reveals link A
+move b down
+ability 1 B
+# cannot scan own ability  
+ability 1 b
+# scan unrevealed link reveals link b
+move B up
+ability 2 A 
+# scan on revealed link does nothing
+
+# Tested: scan own link, scan unrevealed opponent link, scan revealed link

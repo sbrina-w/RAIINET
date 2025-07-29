@@ -1,0 +1,7 @@
+move B up
+move a down
+move A up
+move b down
+sequence tests/sequence2.txt
+ability 5 a
+quit

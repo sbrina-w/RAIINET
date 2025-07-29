@@ -1,3 +1,5 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+# sequence tests/virus-loss.txt
 move a down
 move A up
 move b down
@@ -34,4 +36,7 @@ move f down
 move D up
 ability 3 C
 move a down
-move D up
+
+# current game state: P1: 0D, 3V, P2: P2: 0D, 0V
+# move D up
+# last download of virus causes game over, P1 downloaded 4V, P2 wins.

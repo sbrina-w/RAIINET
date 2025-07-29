@@ -137,7 +137,26 @@ void GameController::handleAbilities() {
 bool GameController::handleAbility(int abilityId, const std::vector<std::string>& args, const std::string& originalLine) {
     try {
         model.useAbility(abilityId, args);
-        std::cout << "Player " << model.getCurrentPlayer()->getId() << " Used ability " << abilityId << "\n";
+
+        // get ability name
+        Player* player = model.getCurrentPlayer();
+        const auto& abilities = player->getAbilities();
+        std::string abilityName = (abilityId >= 1 && abilityId <= (int)abilities.size())
+            ? abilityFullName(abilities[abilityId - 1]->getID())
+            : "Unknown";
+
+        // format arguments
+        std::ostringstream argStream;
+        for (size_t i = 0; i < args.size(); ++i) {
+            argStream << args[i];
+            if (i + 1 < args.size()) argStream << " ";
+        }
+
+        std::cout << "Player " << player->getId()
+                  << " used the " << abilityName
+                  << " ability in slot " << abilityId << ".\n";
+        std::cout << formatAbilityArgs(abilityName, args) << "\n";
+
         commandHistory.push_back(originalLine); // only push if successful
         return true;
     } catch (const std::exception& e) {
@@ -238,4 +257,34 @@ void GameController::writeCommandHistory() {
         out << cmd << std::endl;
     }
     std::cout << "Command history written to " << filename << std::endl;
+}
+
+std::string GameController::formatAbilityArgs(const std::string& abilityName, const std::vector<std::string>& args) {
+    std::ostringstream out;
+    if (abilityName == "Firewall" && args.size() == 2) {
+        out << "Targeted cell: row " << args[0] << ", column " << args[1];
+    } else if (abilityName == "Exchange" && args.size() == 2) {
+        out << "Targeted links: " << args[0] << ", " << args[1];
+    } else if (abilityName == "Hijack" && args.size() == 2) {
+        out << "Targeted link: " << args[0] << "  |  Move direction: " << args[1];
+    } else if (abilityName == "Download" && args.size() == 1) {
+        out << "Targeted link: " << args[0];
+    } else if (abilityName == "Scan" && args.size() == 1) {
+        out << "Targeted link: " << args[0];
+    } else if (abilityName == "Polarize" && args.size() == 1) {
+        out << "Targeted link: " << args[0];
+    } else if (abilityName == "LinkBoost" && args.size() == 1) {
+        out << "Targeted link: " << args[0];
+    } else if (abilityName == "GoLater" && args.empty()) {
+        out << "(No arguments needed)";
+    } else {
+        // fallback: just print the arguments
+        out << "Arguments: [";
+        for (size_t i = 0; i < args.size(); ++i) {
+            out << args[i];
+            if (i + 1 < args.size()) out << " ";
+        }
+        out << "]";
+    }
+    return out.str();
 }

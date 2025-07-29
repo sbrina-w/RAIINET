@@ -12,6 +12,7 @@ private:
 
     // helper functions
     static std::string abilityFullName(char id);
+    std::string formatAbilityArgs(const std::string& abilityName, const std::vector<std::string>& args);
 
     // command history
     void writeCommandHistory();

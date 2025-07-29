@@ -13,6 +13,7 @@ Firewall::Firewall() : Ability('F') {}
 // Usage: ability <N> <row> <col>
 void Firewall::execute(GameModel& model, vector<string> args) {
     if (args.size() < 2) throw invalid_argument("Firewall: missing row/col");
+    if (args.size() > 2) throw invalid_argument("Firewall: too many arguments");
     int row = stoi(args[0]);
     int col = stoi(args[1]);
 

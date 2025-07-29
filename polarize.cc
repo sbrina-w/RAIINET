@@ -11,6 +11,7 @@ Polarize::Polarize() : Ability('P') {}
 // Usage: ability <N> <linkID>
 void Polarize::execute(GameModel& model, vector<string> args) {
     if (args.size() < 1) throw invalid_argument("Polarize: missing linkID");
+    if (args.size() > 1) throw invalid_argument("Polarize: too many arguments");
     char linkID = args[0][0];
 
     Link* link = model.findLinkById(linkID);

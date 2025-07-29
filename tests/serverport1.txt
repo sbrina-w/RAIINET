@@ -1,0 +1,12 @@
+move E up
+move d down
+move E up
+move d down
+move E up
+ability 3 D
+move d down
+ability 4 d
+move E up
+ability 4 E
+move d down
+ability 1 E

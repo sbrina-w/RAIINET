@@ -1,0 +1,19 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+# ability 1 d
+# move d down
+# D moves 2 spaces instead of one.
+
+# ability 1 E
+# move E right
+# move d down
+# move E right
+# LinkBoosted links are still bounds checked properly. 
+
+# move E left
+# move d down
+# LinkBoosted link jumps over obstacles, reaches serverport and is downloaded by P2
+
+#move E left
+# LinkBoosted link jumps over own links.
+
+# Tested: move one extra square in each direction it moves, jump over obstacles (opponent and self), boosted links are still bounds checked off left/right/own edges.

@@ -1,4 +1,4 @@
-# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 SSLFD -ability2 SSLFD
 ability 1 A
 # scan unrevealed link reveals link A
 move b down

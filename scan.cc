@@ -12,6 +12,7 @@ Scan::Scan() : Ability('S') {}
 // Usage: ability <N> <linkID>
 void Scan::execute(GameModel& model, vector<string> args) {
     if (args.size() < 1) throw invalid_argument("Scan: missing linkID");
+    if (args.size() > 1) throw invalid_argument("Scan: too many arguments");
     char linkID = args[0][0];
 
     Player* current = model.getCurrentPlayer();
@@ -38,7 +39,6 @@ void Scan::execute(GameModel& model, vector<string> args) {
                 //mark this cell as changed
                 model.clearChangedCells();
                 model.addChangedCell(r, c);
-                model.notify(ChangeEvent::AbilityUsed);
                 return;
             }
         }

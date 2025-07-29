@@ -30,6 +30,7 @@ bool Exchange::checkFirewallAfterPlacement(GameModel& model, Board& board, int r
 // Usage: ability <N> <linkID1> <linkID2>
 void Exchange::execute(GameModel& model, vector<string> args) {
     if (args.size() < 2) throw invalid_argument("Exchange: missing linkIDs");
+    if (args.size() > 2) throw invalid_argument("Exchange: too many arguments");
     char linkID1 = args[0][0];
     char linkID2 = args[1][0];
 

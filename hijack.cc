@@ -12,6 +12,7 @@ Hijack::Hijack() : Ability('H') {}
 // Usage: ability <N> <linkID> <direction>
 void Hijack::execute(GameModel& model, vector<string> args) {
     if (args.size() < 2) throw invalid_argument("Hijack: missing linkID/direction");
+    if (args.size() > 2) throw invalid_argument("Hijack: too many arguments");
     char linkID = args[0][0];
     string direction = args[1];
 

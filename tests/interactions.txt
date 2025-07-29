@@ -1,4 +1,5 @@
-./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 SSLFD
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 SSLFD
+# sequence tests/interactions.txt 
 board
 # displays current board display
 

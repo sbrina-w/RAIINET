@@ -224,7 +224,9 @@ bool GameController::handleSequence(const std::string& filename) {
         } else if (command == "sequence") {
             std::string filename;
             if (iss >> filename) {
-                handleSequence(filename);
+                if (!handleSequence(filename)) {
+                    return false;
+                }
             } else {
                 std::cout << "Usage: sequence <filename>\n";
             }

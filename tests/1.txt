@@ -12,6 +12,8 @@
 #   5. Polarize
 # Simple movement and battles, no abilities used
 
+# sequence tests/1.txt
+
 move a down
 move A up
 move b down

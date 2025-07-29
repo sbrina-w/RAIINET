@@ -55,7 +55,9 @@ void GameController::play() {
         else if (command == "sequence") {
             std::string filename;
             if (iss >> filename) {
-                handleSequence(filename);
+                if (!handleSequence(filename)) {
+                    break; // quit if handleSequence signals game over
+                }
             } else {
                 std::cout << "Usage: sequence <filename>\n";
             }
@@ -169,11 +171,11 @@ void GameController::handleBoard() {
     model.notify(ChangeEvent::PrintBoard);
 }
 
-void GameController::handleSequence(const std::string& filename) {
+bool GameController::handleSequence(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cout << "Could not open file: " << filename << "\n";
-        return;
+        return true;
     }
     
     std::string line;
@@ -191,7 +193,8 @@ void GameController::handleSequence(const std::string& filename) {
         if (command == "quit") {
             std::cout << "Game ended.\n";
             writeCommandHistory();
-            break;
+            file.close();
+            return false;
         } else if (command == "move") {
             std::string linkId, direction;
             if (iss >> linkId >> direction) {
@@ -232,11 +235,12 @@ void GameController::handleSequence(const std::string& filename) {
         
         if (model.isGameOver()) {
             std::cout << "Game ended during sequence execution.\n";
-            break;
+            return false;
         }
     }
     
     file.close();
+    return true;
 }
 
 void GameController::notify(ChangeEvent event) {

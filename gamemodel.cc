@@ -278,6 +278,7 @@ void GameModel::moveLink(Player* curr, char id, int dir)
             board.at(oldR, oldC).removeLink();
             clearChangedCells();
             addChangedCell(oldR, oldC);
+            addChangedCell(newR, newC);
             notifyObservers(ChangeEvent::DownloadOccurred);
         }
     }

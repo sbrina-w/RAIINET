@@ -10,6 +10,7 @@
 #include "xwindow.h"
 #include "gamemodel.h"
 #include "celltype.h"
+#include <memory>
 
 class GraphicsDisplay : public Observer {
 public:
@@ -20,7 +21,7 @@ public:
   void setViewerId(int id) { viewerId = id; }
 
 private:
-  Xwindow*      window;    //shared window
+  std::unique_ptr<Xwindow> window;    //shared window
   int           viewerId;  //1 or 2
   Pixmap        buffer1;   //off-screen for player 1
   Pixmap        buffer2;   //off-screen for player 2

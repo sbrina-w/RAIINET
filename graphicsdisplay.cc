@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -17,7 +18,7 @@ GraphicsDisplay::GraphicsDisplay(int viewerId)
 {
    int w = BOARD_OFFSET_X*2 + CELL_SIZE*8;
    int h = BOARD_OFFSET_HEIGHT_Y*2 + CELL_SIZE*8 + INFO_PANEL_HEIGHT*2;
-   window = new Xwindow(w, h);
+   window = std::make_unique<Xwindow>(w, h);
    //allocate two pixmaps
    buffer1 = window->makePixmap();
    buffer2 = window->makePixmap();
@@ -33,7 +34,6 @@ GraphicsDisplay::~GraphicsDisplay() {
   if (window) {
     XFreePixmap(window->getDisplay(), buffer1);
     XFreePixmap(window->getDisplay(), buffer2);
-    delete window;
     window = nullptr;
   }
 }

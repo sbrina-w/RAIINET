@@ -1,11 +1,20 @@
-# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 SSGPP -ability2 SSGPP
 # P1 has f:V4
 ability 5 f
 # polarize own link P1 now has f:D4
+# note that link g is green right now (D2)
 
 # P1 has g:D2
 move f down
 ability 5 g
-# polarize opponent link, P1 now has g:D2
-
+# polarize opponent link, P1 now has g:V2
 move G up
+
+move d down
+move D up
+move d down
+move D up
+
+# battle occurs, D wins, d gets downloaded. now D is revealed
+
+move F up

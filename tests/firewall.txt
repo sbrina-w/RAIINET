@@ -1,5 +1,7 @@
 # ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
 # sequence tests/firewall.txt
+# run with sequence for setup, then do manual input shown in comments
+
 ability 2 4 3
 move d down
 move E up

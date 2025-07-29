@@ -6,6 +6,7 @@
 #include <string>
 #include "ability.h"
 #include "linktype.h"
+#include <memory>
 
 class Link;
 class Ability;
@@ -14,9 +15,9 @@ class Player
 {
 private:
     int id;
-    std::map<char, Link *> links;
+    std::map<char, std::unique_ptr<Link>> links;
     std::map<char, Link *> opponentLinks;
-    std::vector<Ability*> abilities;
+    std::vector<std::unique_ptr<Ability>> abilities;
     int abilitiesRemaining;
     int downloadedData;
     int downloadedVirus;
@@ -40,9 +41,9 @@ public:
     void incrementDownload(LinkType t);
 
     // link management
-    void addLink(char linkId, Link* link);
+    void addLink(char linkId, std::unique_ptr<Link> link);
     Link* getLink(char linkId) const;
-    const std::map<char, Link*>& getLinks() const;
+    const std::map<char, std::unique_ptr<Link>>& getLinks() const;
 
     // opponent link knowledge
     void learnOpponentLink(char linkId, Link* link);
@@ -55,7 +56,7 @@ public:
     void decrementAbilitiesRemaining();
     bool canUseAbility() const;
     void activateGoLater();
-    const std::vector<Ability*>& getAbilities() const;
+    const std::vector<std::unique_ptr<Ability>>& getAbilities() const;
     void startTurn();
 };
 

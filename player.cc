@@ -9,6 +9,7 @@
 #include "exchange.h"
 #include "golater.h"
 #include "hijack.h"
+#include <memory>
 
 Player::Player(int playerId)
   : id(playerId),
@@ -21,14 +22,9 @@ Player::Player(int playerId)
     setAbilities("LFDSP");
 }
 
-Player::~Player() {
-    // clean up owned links
-    for (auto& pair : links) {
-        delete pair.second;
-    }
-    // clean up abilities
-    for (Ability* a : abilities) delete a;
-}
+Player::~Player(){
+} 
+
 
 int Player::getId() const {
     return id;
@@ -46,13 +42,13 @@ int Player::getUnusedAbilityCount() const {
     return abilitiesRemaining;
 }
 
-void Player::addLink(char linkId, Link* link) {
-    links[linkId] = link;
+void Player::addLink(char linkId, std::unique_ptr<Link> link) {
+    links[linkId] = std::move(link);
 }
 
 Link* Player::getLink(char linkId) const {
     auto it = links.find(linkId);
-    return (it != links.end()) ? it->second : nullptr;
+    return (it != links.end()) ? it->second.get() : nullptr;
 }
 
 void Player::incrementDownload(LinkType t){
@@ -63,7 +59,7 @@ void Player::incrementDownload(LinkType t){
     }
 }
 
-const std::map<char, Link*>& Player::getLinks() const {
+const std::map<char, std::unique_ptr<Link>>& Player::getLinks() const {
     return links;
 }
 
@@ -82,23 +78,22 @@ bool Player::knowsOpponentLink(char linkId) const {
 
 void Player::setAbilities(const std::string& abilityOrder) {
     // Clean up old abilities if needed
-    for (Ability* a : abilities) delete a;
     abilities.clear();
 
     for (char c : abilityOrder) {
-        Ability* ability = nullptr;
+        std::unique_ptr<Ability> ability;
         switch (c) {
-            case 'L': ability = new LinkBoost(); break;
-            case 'F': ability = new Firewall(); break;
-            case 'D': ability = new Download(); break;
-            case 'S': ability = new Scan(); break;
-            case 'P': ability = new Polarize(); break;
-            case 'E': ability = new Exchange(); break;
-            case 'G': ability = new GoLater(); break;
-            case 'H': ability = new Hijack(); break;
+            case 'L': ability = std::make_unique<LinkBoost>(); break;
+            case 'F': ability = std::make_unique<Firewall>(); break;
+            case 'D': ability = std::make_unique<Download>(); break;
+            case 'S': ability = std::make_unique<Scan>(); break;
+            case 'P': ability = std::make_unique<Polarize>(); break;
+            case 'E': ability = std::make_unique<Exchange>(); break;
+            case 'G': ability = std::make_unique<GoLater>(); break;
+            case 'H': ability = std::make_unique<Hijack>(); break;
             default: break;
         }
-        if (ability) abilities.push_back(ability);
+        if (ability) abilities.push_back(std::move(ability));
     }
 }
 
@@ -120,7 +115,7 @@ void Player::activateGoLater() {
     goLaterActive = true;
 }
 
-const std::vector<Ability*>& Player::getAbilities() const {
+const std::vector<std::unique_ptr<Ability>>& Player::getAbilities() const {
     return abilities;
 }
 

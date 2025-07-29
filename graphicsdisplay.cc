@@ -181,7 +181,7 @@ void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
   const auto& p1Links = p1->getLinks();
   for (const auto& pair : p1Links) {
       char id = pair.first;
-      Link* link = pair.second;
+      Link* link = pair.second.get();
       std::string idStr(1, id);
       window->drawString(x, y, idStr + ": ", Xwindow::Black);
       if (current->getId() == 1 || current->knowsOpponentLink(id) || link->isRevealed()) {
@@ -219,7 +219,7 @@ void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
   const auto& p2Links = p2->getLinks();
   for (const auto& pair : p2Links) {
       char id = pair.first;
-      Link* link = pair.second;
+      Link* link = pair.second.get();
       window->drawString(x, y, std::string(1, id) + ": ", Xwindow::Black);
       if (current->getId() == 2 || current->knowsOpponentLink(id) || link->isRevealed()) {
           char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';

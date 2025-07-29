@@ -1,6 +1,7 @@
 #include "gamemodel.h"
 #include "link.h"
 #include <iostream>
+#include <memory>
 
 using namespace std;
 
@@ -12,6 +13,11 @@ GameModel::GameModel()
     players.push_back(std::make_unique<Player>(1));
     players.push_back(std::make_unique<Player>(2));
 }
+
+GameModel::~GameModel(){
+    
+}
+
 
 void GameModel::initializePlayers(const string &p1Abilities, const string &p2Abilities,
                                   const vector<string> &p1Links, const vector<string> &p2Links)
@@ -382,16 +388,16 @@ const std::vector<std::pair<int, int>>& GameModel::getChangedCells() const {
 
 int GameModel::getWinnerId() const {
     // 1. check if any player has 4+ data downloads
-    for (Player* player : players) {
+    for (const auto & player : players) {
         if (player->getDataDownloadCount() >= 4) {
             return player->getId();
         }
     }
 
     // 2. check if any player has all opponents with 4+ virus downloads
-    for (Player* candidate : players) {
+    for (const auto & candidate : players) {
         bool allOpponentsHave4Virus = true;
-        for (Player* opponent : players) {
+        for (const auto & opponent : players) {
             if (opponent == candidate) continue;
             if (opponent->getVirusDownloadCount() < 4) {
                 allOpponentsHave4Virus = false;

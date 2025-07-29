@@ -9,6 +9,7 @@
 #include "exchange.h"
 #include "golater.h"
 #include "hijack.h"
+#include <memory>
 
 Player::Player(int playerId)
   : id(playerId),
@@ -20,6 +21,10 @@ Player::Player(int playerId)
     //initialize with default abilities
     setAbilities("LFDSP");
 }
+
+Player::~Player(){
+} 
+
 
 int Player::getId() const {
     return id;

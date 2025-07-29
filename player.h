@@ -6,6 +6,7 @@
 #include <string>
 #include "ability.h"
 #include "linktype.h"
+#include <memory>
 
 class Link;
 class Ability;

@@ -6,6 +6,7 @@
 #include "player.h"
 #include "subject.h"
 #include "changeevent.h"
+#include <memory>
 
 using namespace std; 
 

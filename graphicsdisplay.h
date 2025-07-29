@@ -5,12 +5,13 @@
 #include "celltype.h"
 #include "observer.h"
 #include "xwindow.h"
+#include <memory>
 
 using namespace std;
 
 class GraphicsDisplay : public Observer {
 private:
-    Xwindow* window;
+    std::unique_ptr<Xwindow> window;
     int viewerId;
     //track current drawn
     vector<vector<char>> lastSnapshot;

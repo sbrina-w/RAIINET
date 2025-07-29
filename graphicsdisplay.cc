@@ -15,12 +15,8 @@ using namespace std;
 GraphicsDisplay::GraphicsDisplay(int viewerId) : viewerId(viewerId) {
     int windowWidth = BOARD_OFFSET_X * 2 + CELL_SIZE * 8;
     int windowHeight = BOARD_OFFSET_Y * 2 + CELL_SIZE * 8 + INFO_PANEL_HEIGHT * 2;
-    window = new Xwindow(windowWidth, windowHeight);
+    window = std::make_unique<Xwindow>(windowWidth, windowHeight);
     lastSnapshot.assign(8, vector<char>(8, '.'));
-}
-
-GraphicsDisplay::~GraphicsDisplay() {
-    delete window;
 }
 
 void GraphicsDisplay::notify(GameModel& model, ChangeEvent event) {

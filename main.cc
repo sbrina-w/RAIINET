@@ -6,6 +6,7 @@
 #include "graphicsdisplay.h"
 
 #include <iostream>
+#include <memory>
 
 int main(int argc, char *argv[])
 {
@@ -29,17 +30,16 @@ int main(int argc, char *argv[])
     model.addObserver(&view1);
     model.addObserver(&view2);
 
-    GraphicsDisplay* graphicsView = nullptr;
+    std::unique_ptr<GraphicsDisplay> graphicsView;
     if (config.graphicsEnabled) {
-        graphicsView = new GraphicsDisplay();
-        model.addObserver(graphicsView);
+        graphicsView = std::make_unique<GraphicsDisplay>();
+        model.addObserver(graphicsView.get());
     }
 
     // put the model in setup, if it fails exit
     if (!setup.initializeGame(model))
     {
         std::cerr << "Failed to initialize game with provided config.\n";
-        if (config.graphicsEnabled && graphicsView) delete graphicsView;
         return 1;
     }
 
@@ -48,9 +48,6 @@ int main(int argc, char *argv[])
         Player* player = model.getPlayer(i);
         if (!player) continue;
         std::cout << "Player " << i << " abilities:\n";
-        // You may need to add a getter for the abilities vector if it's private
-        // For now, add this method to Player:
-        // const std::vector<Ability*>& getAbilities() const { return abilities; }
         for (const auto& ability : player->getAbilities()) {
             std::cout << "  ID: " << ability->getID()
                       << " Used: " << (ability->isUsed() ? "yes" : "no") << "\n";
@@ -60,15 +57,9 @@ int main(int argc, char *argv[])
     // to draw the initial board
     model.notify(ChangeEvent::GameStart);
 
-
-    
-
     // 5) Enter game loop
     GameController controller(model);
     controller.play();
 
-    if (graphicsView) {
-        delete graphicsView;
-    }
     return 0;
 }

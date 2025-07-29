@@ -117,7 +117,7 @@ void GameController::handleAbilities() {
     const auto& abilities = player->getAbilities();
     std::cout << "Abilities for Player " << player->getId() << ":\n";
     for (size_t i = 0; i < abilities.size(); ++i) {
-        const Ability* ability = abilities[i];
+        const Ability* ability = abilities[i].get();
         std::string status = ability->isUsed() ? "(used)" : "(not used)";
         std::cout << "  " << (i+1) << ". " << abilityFullName(ability->getID()) << " " << status << "\n";
     }

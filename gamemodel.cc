@@ -387,10 +387,28 @@ const std::vector<std::pair<int, int>>& GameModel::getChangedCells() const {
 }
 
 int GameModel::getWinnerId() const {
+    // 1. check if any player has 4+ data downloads
     for (Player* player : players) {
-        if (player->getDataDownloadCount() >= 4 || player->getVirusDownloadCount() >= 4) {
+        if (player->getDataDownloadCount() >= 4) {
             return player->getId();
         }
     }
-    return 0; // 0 means no winner yet
+
+    // 2. check if any player has all opponents with 4+ virus downloads
+    for (Player* candidate : players) {
+        bool allOpponentsHave4Virus = true;
+        for (Player* opponent : players) {
+            if (opponent == candidate) continue;
+            if (opponent->getVirusDownloadCount() < 4) {
+                allOpponentsHave4Virus = false;
+                break;
+            }
+        }
+        if (allOpponentsHave4Virus) {
+            return candidate->getId();
+        }
+    }
+
+    // no winner yet
+    return 0;
 }

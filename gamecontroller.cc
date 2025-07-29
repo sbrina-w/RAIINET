@@ -237,6 +237,14 @@ bool GameController::handleSequence(const std::string& filename) {
         
         if (model.isGameOver()) {
             std::cout << "Game ended during sequence execution.\n";
+            int winner = model.getWinnerId();
+            if (winner) {
+                Player* p1 = model.getPlayer(1);
+                Player* p2 = model.getPlayer(2);
+                std::cout << "Player " << winner << " wins!\n";
+                std::cout << "Player 1: " << p1->getDataDownloadCount() << "D, " << p1->getVirusDownloadCount() << "V\n";
+                std::cout << "Player 2: " << p2->getDataDownloadCount() << "D, " << p2->getVirusDownloadCount() << "V\n";
+            }
             return false;
         }
     }

@@ -1,3 +1,4 @@
 *.o
 raiinet
 settings.json
+tests/history.txt

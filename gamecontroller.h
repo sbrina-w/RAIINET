@@ -8,16 +8,21 @@
 class GameController {
 private:
     GameModel& model;
+    std::vector<std::string> commandHistory;
 
     // helper functions
     static std::string abilityFullName(char id);
+    std::string formatAbilityArgs(const std::string& abilityName, const std::vector<std::string>& args);
+
+    // command history
+    void writeCommandHistory();
     
     //command handling methods
-    void handleMove(char linkId, const std::string& direction);
+    bool handleMove(char linkId, const std::string& direction, const std::string& originalLine);
     void handleAbilities();
-    void handleAbility(int abilityId, const std::vector<std::string>& args);
+    bool handleAbility(int abilityId, const std::vector<std::string>& args, const std::string& originalLine);
     void handleBoard();
-    void handleSequence(const std::string& filename);
+    bool handleSequence(const std::string& filename);
 
 public:
     GameController(GameModel& model);

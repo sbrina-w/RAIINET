@@ -71,6 +71,7 @@
         "execution": "cpp",
         "ios": "cpp",
         "optional": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "fstream": "cpp"
     }
 }

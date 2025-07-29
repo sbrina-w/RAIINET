@@ -25,7 +25,6 @@ Player *Cell::getFirewallOwner() const
 void Cell::setFirewallOwner(Player *owner)
 {
     firewallOwner = owner;
-    cellType = CellType::Firewall;
 }
 
 Link *Cell::getLink() const

@@ -52,6 +52,7 @@ public:
     // ability management
     void setAbilities(const std::string& abilityOrder);
     void incrementAbilitiesUsed();
+    void decrementAbilitiesRemaining();
     bool canUseAbility() const;
     void activateGoLater();
     const std::vector<std::unique_ptr<Ability>>& getAbilities() const;

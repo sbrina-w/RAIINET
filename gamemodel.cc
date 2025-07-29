@@ -102,6 +102,7 @@ bool GameModel::isGameOver()
 
 void GameModel::nextTurn() {
     ++currentTurn;
+    notifyObservers(ChangeEvent::TurnEnded);
     getCurrentPlayer()->startTurn();
 }
 
@@ -174,6 +175,9 @@ void GameModel::moveLink(Player* curr, char id, int dir)
         opp->learnOpponentLink(link->getId(), link); // opponent gets to learn it
         curr->incrementDownload(link->getType());
         board.at(oldR, oldC).removeLink();
+        //mark old cell as changed (link downloaded/removed from display)
+        clearChangedCells();
+        addChangedCell(oldR, oldC);
         notifyObservers(ChangeEvent::DownloadOccurred);
         return;
     }
@@ -181,7 +185,26 @@ void GameModel::moveLink(Player* curr, char id, int dir)
     // in bounds so check the cell currently there:
     Cell &dest = board.at(newR, newC);
 
-    //TODO: Handle firewall
+    // for if destination is a firewall cell
+    if (dest.getCellType() == CellType::Firewall) {
+        Player* firewallOwner = dest.getFirewallOwner();
+        if (firewallOwner && firewallOwner != curr) {
+            // only affect opponent links
+            link->reveal();
+            firewallOwner->learnOpponentLink(link->getId(), link);
+
+            if (link->getType() == LinkType::Virus) {
+                // virus is downloaded by its owner (curr)
+                curr->incrementDownload(link->getType());
+                board.at(oldR, oldC).removeLink();
+                clearChangedCells();
+                addChangedCell(oldR, oldC);
+                notifyObservers(ChangeEvent::DownloadOccurred);
+                return;
+            }
+            // if not a virus, continue with normal movement (could be battle, etc.)
+        }
+    }
 
     // for if destination is a server port
     if (dest.getCellType() == CellType::ServerPort)
@@ -199,6 +222,9 @@ void GameModel::moveLink(Player* curr, char id, int dir)
         opp->learnOpponentLink(link->getId(), link); //opponent gets to learn it
         opp->incrementDownload(link->getType()); //then they increment their download count
         board.at(oldR, oldC).removeLink();
+        //mark old cell as changed
+        clearChangedCells();
+        addChangedCell(oldR, oldC);
         notifyObservers(ChangeEvent::DownloadOccurred);
         return;
     }
@@ -233,6 +259,10 @@ void GameModel::moveLink(Player* curr, char id, int dir)
             dest.removeLink();
             dest.setLink(link);
             board.at(oldR, oldC).removeLink();
+            //mark both cells as changed (old position cleared, new position has winning link)
+            clearChangedCells();
+            addChangedCell(oldR, oldC);
+            addChangedCell(newR, newC);
             notifyObservers(ChangeEvent::DownloadOccurred);
         }
         else
@@ -240,6 +270,9 @@ void GameModel::moveLink(Player* curr, char id, int dir)
             // you lose ⇒ so opponent (winner) downloads your link
             opp->incrementDownload(link->getType());
             board.at(oldR, oldC).removeLink();
+            clearChangedCells();
+            addChangedCell(oldR, oldC);
+            addChangedCell(newR, newC);
             notifyObservers(ChangeEvent::DownloadOccurred);
         }
     }
@@ -248,6 +281,9 @@ void GameModel::moveLink(Player* curr, char id, int dir)
         // regular move
         dest.setLink(link);
         board.at(oldR, oldC).removeLink();
+        clearChangedCells();
+        addChangedCell(oldR, oldC);
+        addChangedCell(newR, newC);
         notifyObservers(ChangeEvent::LinkMoved);
     }
 }
@@ -283,6 +319,7 @@ void GameModel::useAbility(int abilityID, const std::vector<std::string>& args) 
     ability->execute(*this, args);
 
     player->incrementAbilitiesUsed();
+    player->decrementAbilitiesRemaining();
 
     notifyObservers(ChangeEvent::AbilityUsed);
 }
@@ -329,4 +366,43 @@ Link* GameModel::findLinkById(char linkId) const {
         if (link) return link;
     }
     return nullptr;
+}
+
+void GameModel::addChangedCell(int row, int col) {
+    changedCells.push_back({row, col});
+}
+
+void GameModel::clearChangedCells() {
+    changedCells.clear();
+}
+
+const std::vector<std::pair<int, int>>& GameModel::getChangedCells() const {
+    return changedCells;
+}
+
+int GameModel::getWinnerId() const {
+    // 1. check if any player has 4+ data downloads
+    for (Player* player : players) {
+        if (player->getDataDownloadCount() >= 4) {
+            return player->getId();
+        }
+    }
+
+    // 2. check if any player has all opponents with 4+ virus downloads
+    for (Player* candidate : players) {
+        bool allOpponentsHave4Virus = true;
+        for (Player* opponent : players) {
+            if (opponent == candidate) continue;
+            if (opponent->getVirusDownloadCount() < 4) {
+                allOpponentsHave4Virus = false;
+                break;
+            }
+        }
+        if (allOpponentsHave4Virus) {
+            return candidate->getId();
+        }
+    }
+
+    // no winner yet
+    return 0;
 }

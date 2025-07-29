@@ -11,6 +11,7 @@ Download::Download() : Ability('D') {}
 // Usage: ability <N> <linkID>
 void Download::execute(GameModel& model, vector<string> args) {
     if (args.size() < 1) throw invalid_argument("Download: missing linkID");
+    if (args.size() > 1) throw invalid_argument("Download: too many arguments");
     char linkID = args[0][0];
 
     Player* current = model.getCurrentPlayer();
@@ -28,6 +29,8 @@ void Download::execute(GameModel& model, vector<string> args) {
         for (int c = 0; c < 8 && !removed; ++c) {
             if (board.at(r, c).getLink() == link) {
                 board.at(r, c).removeLink();
+                model.clearChangedCells();
+                model.addChangedCell(r, c);
                 removed = true;
             }
         }

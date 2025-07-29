@@ -1,0 +1,28 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+# sequence tests/data-win.txt
+move e down
+move E up
+move e down
+move E up
+move e down
+move F up
+move f down
+move F up
+move f down
+move F up
+move f down
+move F up
+ability 3 H
+move h down
+move G up
+ability 1 h
+move h down
+move G up
+move h down
+move G up
+move h down
+move G up
+
+# current game state: P1: 3D, 0V, P2: 0D, 0V
+# move h down
+# Player 1 wins, game over. P1 4D

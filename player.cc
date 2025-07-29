@@ -96,6 +96,12 @@ void Player::incrementAbilitiesUsed() {
     ++abilitiesUsedThisTurn;
 }
 
+void Player::decrementAbilitiesRemaining() {
+    if (abilitiesRemaining > 0) {
+        --abilitiesRemaining;
+    }
+}
+
 bool Player::canUseAbility() const {
     return abilitiesUsedThisTurn < abilitiesAllowedThisTurn;
 }

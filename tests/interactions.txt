@@ -1,0 +1,42 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 SSLFD
+# sequence tests/interactions.txt 
+board
+# displays current board display
+
+abilities
+# shows list of abilities for P1, all unused (SSLFD as set in setup)
+
+ability 1 C
+# uses ability with ID 1 (Scan on c)
+
+abilities
+# shows ability 1 as used (1. Scan (used))
+
+ability 1 D
+# tries to use two abilities in a row, invalid and shows error message "Error using ability! You have already used all allowed abilities this turn."
+
+move c down
+# move updates displays and board and ends player turn
+
+move C up
+move e right
+move D left
+# all cardinal directions
+
+move a left
+# off left edge, fails
+
+move h right 
+# off right edge, fails
+
+move A up
+# not the current player's link, fails
+
+mve a down
+# command misspelled, error message but doesn't break
+
+sequence tests/1.txt
+# sequence file works
+
+sequence tests/sequence1.txt
+# sequence chain 3 times, goes through sequence1.txt to sequence3.txt, then returns back for a quit in sequence1.txt

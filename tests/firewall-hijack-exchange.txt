@@ -1,0 +1,25 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 HHFEG
+ability 5
+move d down
+ability 1 D
+move E up
+ability 3 4 3
+ability 1 D up
+move d down
+ability 4 e
+move E down
+move d down
+ability 2 2  4
+move H up
+move g down
+move G up
+move g left
+move A up
+move g down
+move A up
+move g left
+move C up
+move h down
+move E up
+ability 4 g d
+move h down

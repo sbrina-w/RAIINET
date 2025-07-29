@@ -1,0 +1,12 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+ability 3 e
+# cannot download own link
+ability 3 S
+# cannot download nonexistent link
+ability 3 F
+# sucessfully download opponent's link (data)
+move f down
+ability 3 f
+# successfully download opponent's link (virus)
+
+# Tested: download own link, download opponent link, download invalid link

@@ -15,42 +15,29 @@ Xwindow::Xwindow(int width, int height) : width{width}, height{height} {
     cerr << "Cannot open display" << endl;
     exit(1);
   }
-  s = DefaultScreen(d);
-  w = XCreateSimpleWindow(d, RootWindow(d, s), 10, 10, width, height, 1,
-                          BlackPixel(d, s), WhitePixel(d, s));
-  XSelectInput(d, w, ExposureMask | KeyPressMask);
-  XMapRaised(d, w);
+  int scr = DefaultScreen(d);
+  win = XCreateSimpleWindow(d,
+                            RootWindow(d, scr),
+                            10,10,
+                            width, height,
+                            1,
+                            BlackPixel(d, scr),
+                            WhitePixel(d, scr));
+  drawable = win;
+  XSelectInput(d, win, ExposureMask | KeyPressMask);
+  XMapRaised(d, win);
 
-  Pixmap pix = XCreatePixmap(d,w,width,
-        height,DefaultDepth(d,DefaultScreen(d)));
-  gc = XCreateGC(d, pix, 0,(XGCValues *)0);
-
-  XFlush(d);
-  XFlush(d);
-
-  // Set up colours.
-  XColor xcolour;
-  Colormap cmap;
-  char color_vals[5][10]={"white", "black", "red", "green", "blue"};
-
-  cmap=DefaultColormap(d,DefaultScreen(d));
-  for(int i=0; i < 5; ++i) {
-      XParseColor(d,cmap,color_vals[i],&xcolour);
-      XAllocColor(d,cmap,&xcolour);
-      colours[i]=xcolour.pixel;
+  gc = XCreateGC(d, win, 0, nullptr);
+  Colormap cmap = DefaultColormap(d, scr);
+  const char *names[7] = {"white","black","red","green","darkgreen","blue","orange"};
+  for (int i = 0; i < 7; ++i) {
+    XColor col;
+    XParseColor(d, cmap, names[i], &col);
+    XAllocColor(d, cmap, &col);
+    colours[i] = col.pixel;
   }
-
-  XSetForeground(d,gc,colours[Black]);
-
-  // Make window non-resizeable.
-  XSizeHints hints;
-  hints.flags = (USPosition | PSize | PMinSize | PMaxSize );
-  hints.height = hints.base_height = hints.min_height = hints.max_height = height;
-  hints.width = hints.base_width = hints.min_width = hints.max_width = width;
-  XSetNormalHints(d, w, &hints);
-
-  XSynchronize(d,True);
-
+  XSetForeground(d, gc, colours[Black]);
+  XSynchronize(d, false);
   usleep(1000);
 }
 
@@ -59,28 +46,26 @@ Xwindow::~Xwindow() {
   XCloseDisplay(d);
 }
 
-int Xwindow::getWidth() const { return width; }
-int Xwindow::getHeight() const { return height; }
-
-void Xwindow::fillRectangle(int x, int y, int width, int height, int colour) {
+void Xwindow::fillRectangle(int x,int y,int w,int h,int colour) {
   XSetForeground(d, gc, colours[colour]);
-  XFillRectangle(d, w, gc, x, y, width, height);
+  XFillRectangle(d, drawable, gc, x,y,w,h);
   XSetForeground(d, gc, colours[Black]);
 }
 
-void Xwindow::drawString(int x, int y, string msg, int colour) {
+void Xwindow::drawString(int x,int y,const string &s,int colour) {
   XSetForeground(d, gc, colours[colour]);
-  XDrawString(d, w, gc, x, y, msg.c_str(), msg.length());
-  XSetForeground(d, gc, colours[Black]); }
+  XDrawString(d, drawable, gc, x, y, s.c_str(), s.size());
+  XSetForeground(d, gc, colours[Black]);
+}
 
-void Xwindow::drawLine(int x1, int y1, int x2, int y2, int colour) {
+void Xwindow::drawLine(int x1,int y1,int x2,int y2,int colour) {
   XSetForeground(d, gc, colours[colour]);
-  XDrawLine(d, w, gc, x1, y1, x2, y2);
-  XSetForeground(d, gc, colours[Black]); 
+  XDrawLine(d, drawable, gc, x1,y1,x2,y2);
+  XSetForeground(d, gc, colours[Black]);
 }
 
 void Xwindow::clear() {
-  XClearWindow(d, w);
+  XClearWindow(d, win);
 }
 
 void Xwindow::flush() {

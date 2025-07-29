@@ -1,0 +1,29 @@
+# Abilities for Player 1:
+#   1. LinkBoost
+#   2. Firewall
+#   3. Download
+#   4. Scan
+#   5. Polarize
+# Abilities for Player 2:
+#   1. LinkBoost
+#   2. Firewall
+#   3. Download
+#   4. Scan
+#   5. Polarize
+# Simple movement and battles, no abilities used
+
+# sequence tests/1.txt
+
+move a down
+move A up
+move b down
+move B up
+move a down
+move A up
+move b down
+move B up
+move b right
+move B right
+move a down
+move A up
+move a down

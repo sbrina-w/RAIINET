@@ -11,6 +11,7 @@ LinkBoost::LinkBoost() : Ability('L') {}
 // Usage: ability <N> <linkID>
 void LinkBoost::execute(GameModel& model, vector<string> args) {
     if (args.size() < 1) throw invalid_argument("LinkBoost: missing linkID in parameters");
+    if (args.size() > 1) throw invalid_argument("LinkBoost: too many arguments");
     char linkID = args[0][0];
 
     // 1. Get the current player

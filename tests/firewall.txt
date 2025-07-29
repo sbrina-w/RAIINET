@@ -1,0 +1,49 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+# sequence tests/firewall.txt
+# run with sequence for setup, then do manual input shown in comments
+
+ability 2 4 3
+move d down
+move E up
+move d down
+move E up
+move e down
+## stop here
+## player 1's firewall shows up as m
+
+# move E left
+## firewall reveals data that passes through data E is revealed
+
+# move d down
+## d is V2, E is D1, firewall does not affect the owner, therefore battle takes place. 
+## V2 > D1, d wins. P1 downloads E. (1D)
+
+# move D up
+# move e down
+
+# move D up
+## D is V4, d is v2. In a battle, D would win. 
+## Firewall takes priority over battle, D is downloaded by the owner (P2). P2 has 1V.
+
+# move d down
+# move F up
+# move e down
+# move F up
+
+# move e left
+## e is not revealed since a player's own firewall does not affect their links
+## show text display link shown instead of firewall when link is on firewall.
+
+## invalid command examples
+# ability 2 7 3 (can't out firewall on server port)
+# ability 2 0 2 (can't put firewall on occupied cell)
+# ability 2 4 3 (can't put firewall on existing firewall cell)
+
+# ability 2 4 5
+## player 2's firewall shows up as 'w'
+
+# move F up
+## link F is owned by player 2, unaffected by firewall
+## on text display, showing the link takes priority over firewall
+
+# Tested: firewall with opponent data (revealed), virus (downloaded), own data (nothing), virus (nothing), firewall priority over battle, 'm' and 'w' for ownership.

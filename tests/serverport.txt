@@ -1,0 +1,16 @@
+./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+move c right 
+# cannot move onto your own server port (P1)
+
+move d down
+move F left
+# cannot move onto own server port (P2)
+sequence tests/serverport1.txt
+
+move E up
+# link boosted link in server port makes P1 download data (E = D1)
+
+move d down
+# P2 downloads a virus (d = V2)
+
+# Tested: cannot move link onto own server ports, moving link onto opponent's server ports makes them download it (V and D)

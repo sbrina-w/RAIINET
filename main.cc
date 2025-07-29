@@ -12,12 +12,8 @@ int main(int argc, char *argv[])
 {
     // parse command line arguments
     GameSetup setup;
-    // could include error message or usage of commands,
     if (!setup.parseCommandLine(argc, argv))
-    {
         return 1;
-    }
-
     const GameSetupConfig &config = setup.getConfig();
     // initialize game model
     GameModel model;
@@ -31,7 +27,8 @@ int main(int argc, char *argv[])
     model.addObserver(&view2);
 
     std::unique_ptr<GraphicsDisplay> graphicsView;
-    if (config.graphicsEnabled) {
+    if (config.graphicsEnabled)
+    {
         graphicsView = std::make_unique<GraphicsDisplay>();
         model.addObserver(graphicsView.get());
     }
@@ -44,15 +41,19 @@ int main(int argc, char *argv[])
     }
 
     // print statements to debug ability setup
-    for (int i = 1; i <= 2; ++i) {
-        Player* player = model.getPlayer(i);
-        if (!player) continue;
-        std::cout << "Player " << i << " abilities:\n";
-        for (const auto& ability : player->getAbilities()) {
-            std::cout << "  ID: " << ability->getID()
-                      << " Used: " << (ability->isUsed() ? "yes" : "no") << "\n";
-        }
-    }
+    // for (int i = 1; i <= 2; ++i)
+    // {
+    //     Player *player = model.getPlayer(i);
+    //     if (!player){
+    //         continue;
+    //     }
+    //     std::cout << "Player " << i << " abilities:\n";
+    //     for (const auto &ability : player->getAbilities())
+    //     {
+    //         std::cout << "  ID: " << ability->getID()
+    //                   << " Used: " << (ability->isUsed() ? "yes" : "no") << "\n";
+    //     }
+    // }
 
     // to draw the initial board
     model.notify(ChangeEvent::GameStart);

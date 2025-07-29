@@ -1,0 +1,11 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics
+# P1 has f:V4
+ability 5 f
+# polarize own link P1 now has f:D4
+
+# P1 has g:D2
+move f down
+ability 5 g
+# polarize opponent link, P1 now has g:D2
+
+move G up

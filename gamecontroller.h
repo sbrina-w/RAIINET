@@ -22,7 +22,7 @@ private:
     void handleAbilities();
     bool handleAbility(int abilityId, const std::vector<std::string>& args, const std::string& originalLine);
     void handleBoard();
-    void handleSequence(const std::string& filename);
+    bool handleSequence(const std::string& filename);
 
 public:
     GameController(GameModel& model);

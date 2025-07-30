@@ -1,0 +1,26 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 HHLLS -ability2 HHLLS
+
+setup
+
+# hijack link to move into own server port (invalid)
+
+
+# hijack link to move off the left/right edge (invalid) 
+
+
+# hijack link to move off the wrong vertical edge (invalid)
+
+
+# hijack targeting your own link (invalid)
+
+
+# hijack on a normal opponent link, move in some direction + initiate battle
+
+
+# hijack on opponent's boosted link, moves 2 spaces
+
+
+# hijack to move off the opposite vertical edge, causes opponent to download their own link
+
+
+# hijack to move opponents link into your own server ports, causes you to download

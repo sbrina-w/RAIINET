@@ -1,4 +1,4 @@
-move B up
+# move B up
 move a down
 move A up
 move b down

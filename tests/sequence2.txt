@@ -1,5 +1,5 @@
 move F up
-ability 1 C
+ability 1 c
 move c down
 move F up
 move c down

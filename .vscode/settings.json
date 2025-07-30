@@ -73,5 +73,7 @@
         "optional": "cpp",
         "variant": "cpp",
         "fstream": "cpp"
-    }
+    },
+    "conf.marmoset.course": "CS247",
+    "conf.marmoset.semester": "Spring 2025"
 }

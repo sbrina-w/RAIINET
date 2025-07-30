@@ -1,0 +1,107 @@
+# ./raiinet -link1 sample_links.txt -link2 sample_links2.txt -graphics -ability1 HHFEG
+# sequence tests/f-h-e-fullgame.txt
+move d down
+move E up
+ability 1 D up
+move d down
+move E down
+move d down
+move H up
+move g down
+move G up
+move g left
+move A up
+move g down
+move A up
+move g left
+move C up
+move h down
+move E up
+move h down
+move D up
+move g down
+ability 3 E
+move E up
+ability 2 D left
+move g down
+move D up
+ability 3 g
+move g down
+ability 1 g down
+move D up
+move b down
+move D left
+move b down
+ability 4 H
+move H left
+move b down
+move H up
+move b right
+move H left
+move b right
+ability 5 h
+move G up
+move b down
+ability 2 b down
+move C right
+move b down
+move F up
+move b left
+move B right
+move b down
+move A up
+move b down
+
+
+# end of game board state
+# ------ PLAYER 1 TURN START ------
+
+# Player 1 (Current Player):
+# Downloaded: 3D, 3V
+# Abilities: 2
+# a: V1 b: D4 c: V3 d: V2 e: D3 f: V4 g: D2 h: D1 
+# ========
+# a.cSSf..
+# ....e...
+# .......h
+# ........
+# A.......
+# ......G.
+# .....F..
+# ..bSS...
+# ========
+# Player 2:
+# Downloaded: 0D, 1V
+# Abilities: 0
+# A: ? B: V2 C: V3 D: V4 E: D1 F: ? G: ? H: D4 
+
+# Player 1's turn > move b down
+# Player 1 moved link b down
+
+# ------ PLAYER 1 TURN ENDED ------
+
+# ------ PLAYER 2 TURN START ------
+
+# Player 1:
+# Downloaded: 4D, 3V
+# Abilities: 2
+# a: ? b: D4 c: ? d: V2 e: ? f: ? g: D2 h: D1 
+# ========
+# a.cSSf..
+# ....e...
+# .......h
+# ........
+# A.......
+# ......G.
+# .....F..
+# ...SS...
+# ========
+# Player 2 (Current Player):
+# Downloaded: 0D, 1V
+# Abilities: 0
+# A: V1 B: V2 C: V3 D: V4 E: D1 F: D2 G: D3 H: D4 
+
+# Game Over!
+# Player 1 wins!
+# Player 1: 4D, 3V
+# Player 2: 0D, 1V

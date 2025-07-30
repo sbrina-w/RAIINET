@@ -3,24 +3,49 @@
 setup
 
 # hijack link to move into own server port (invalid)
-
+ability 1 D down
 
 # hijack link to move off the left/right edge (invalid) 
-
-
-# hijack link to move off the wrong vertical edge (invalid)
-
+ability 1 A left
 
 # hijack targeting your own link (invalid)
+ability 1 a up
+
+# hijack moving link into another one (invalid)
+ability 1 D right
+
+# hijack link to move off the wrong vertical edge (invalid)
+ability 1 B down
 
 
-# hijack on a normal opponent link, move in some direction + initiate battle
-
-
-# hijack on opponent's boosted link, moves 2 spaces
-
+move c down
+move C up
+move c down
+move C left
+move c down
+move E up
+move c down
+move E up
+move c down
+move E up
+move c down
+move E up
+move c down
 
 # hijack to move off the opposite vertical edge, causes opponent to download their own link
+ability 1 c down
 
+move D up
 
+# hijack on a normal opponent link, move in some direction + initiate battle
+ability 1 E up
+
+move d left
+move D up
+move e down
+ability 3 D
+move D up
+
+# hijack on opponent's boosted link, moves 2 spaces
 # hijack to move opponents link into your own server ports, causes you to download
+ability 2 D up

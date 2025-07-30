@@ -6,6 +6,7 @@
 #include "player.h"
 #include "subject.h"
 #include "changeevent.h"
+#include <memory>
 
 using namespace std; 
 
@@ -15,7 +16,7 @@ class GameModel : public Subject
 {
 private:
     Board board;
-    std::vector<Player *> players;
+    std::vector<std::unique_ptr<Player>> players;
     // continuously incremented, mod by number of players to get cur player
     int currentTurn; 
     vector<pair<int, int>> changedCells;

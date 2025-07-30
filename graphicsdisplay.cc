@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -17,7 +18,7 @@ GraphicsDisplay::GraphicsDisplay(int viewerId)
 {
    int w = BOARD_OFFSET_X*2 + CELL_SIZE*8;
    int h = BOARD_OFFSET_HEIGHT_Y*2 + CELL_SIZE*8 + INFO_PANEL_HEIGHT*2;
-   window = new Xwindow(w, h);
+   window = std::make_unique<Xwindow>(w, h);
    //allocate two pixmaps
    buffer1 = window->makePixmap();
    buffer2 = window->makePixmap();
@@ -33,7 +34,6 @@ GraphicsDisplay::~GraphicsDisplay() {
   if (window) {
     XFreePixmap(window->getDisplay(), buffer1);
     XFreePixmap(window->getDisplay(), buffer2);
-    delete window;
     window = nullptr;
   }
 }
@@ -181,7 +181,7 @@ void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
   const auto& p1Links = p1->getLinks();
   for (const auto& pair : p1Links) {
       char id = pair.first;
-      Link* link = pair.second;
+      Link* link = pair.second.get();
       std::string idStr(1, id);
       window->drawString(x, y, idStr + ": ", Xwindow::Black);
       if (current->getId() == 1 || current->knowsOpponentLink(id) || link->isRevealed()) {
@@ -219,7 +219,7 @@ void GraphicsDisplay::drawPlayerInfo(GameModel& model) {
   const auto& p2Links = p2->getLinks();
   for (const auto& pair : p2Links) {
       char id = pair.first;
-      Link* link = pair.second;
+      Link* link = pair.second.get();
       window->drawString(x, y, std::string(1, id) + ": ", Xwindow::Black);
       if (current->getId() == 2 || current->knowsOpponentLink(id) || link->isRevealed()) {
           char typeChar = (link->getType() == LinkType::Virus) ? 'V' : 'D';

@@ -1,6 +1,7 @@
 #include "gamemodel.h"
 #include "link.h"
 #include <iostream>
+#include <memory>
 
 using namespace std;
 
@@ -9,15 +10,14 @@ GameModel::GameModel()
       currentTurn(1)
 {
     // create two players with IDs 1 and 2
-    players.push_back(new Player(1));
-    players.push_back(new Player(2));
+    players.push_back(std::make_unique<Player>(1));
+    players.push_back(std::make_unique<Player>(2));
 }
 
-GameModel::~GameModel()
-{
-    for (Player *p : players)
-        delete p;
+GameModel::~GameModel(){
+    
 }
+
 
 void GameModel::initializePlayers(const string &p1Abilities, const string &p2Abilities,
                                   const vector<string> &p1Links, const vector<string> &p2Links)
@@ -32,8 +32,8 @@ void GameModel::initializePlayers(const string &p1Abilities, const string &p2Abi
     {
         LinkType type = (linkStr[0] == 'V') ? LinkType::Virus : LinkType::Data;
         int strength = linkStr[1] - '0'; // convert char to int
-        Link *link = new Link(linkId, type, strength, players[0]);
-        players[0]->addLink(linkId, link);
+        auto link = std::make_unique<Link>(linkId, type, strength, players[0].get());
+        players[0]->addLink(linkId, std::move(link));
         linkId++;
     }
 
@@ -43,8 +43,8 @@ void GameModel::initializePlayers(const string &p1Abilities, const string &p2Abi
     {
         LinkType type = (linkStr[0] == 'V') ? LinkType::Virus : LinkType::Data;
         int strength = linkStr[1] - '0';
-        Link *link = new Link(linkId, type, strength, players[1]);
-        players[1]->addLink(linkId, link);
+        auto link = std::make_unique<Link>(linkId, type, strength, players[1].get());
+        players[1]->addLink(linkId, std::move(link));
         linkId++;
     }
 }
@@ -57,7 +57,7 @@ void GameModel::placeLinksOnBoard()
     for (const auto &pair : p1Links)
     {
         char id = pair.first;
-        Link *link = pair.second;
+        Link *link = pair.second.get();
 
         if (col == 3 || col == 4)
         {
@@ -78,7 +78,7 @@ void GameModel::placeLinksOnBoard()
     for (const auto &pair : p2Links)
     {
         char id = pair.first;
-        Link *link = pair.second;
+        Link *link = pair.second.get();
 
         if (col == 3 || col == 4)
         {
@@ -96,7 +96,7 @@ void GameModel::placeLinksOnBoard()
 
 bool GameModel::isGameOver()
 {
-    for (Player *player : players)
+    for (const auto &player : players)
     {
         if (player->getDataDownloadCount() >= 4 || player->getVirusDownloadCount() >= 4)
         {
@@ -296,11 +296,11 @@ void GameModel::moveLink(Player* curr, char id, int dir)
 
 Player *GameModel::getPlayer(int playerId) const
 {
-    for (Player *player : players)
+    for (const auto &player : players)
     {
         if (player->getId() == playerId)
         {
-            return player;
+            return player.get();
         }
     }
     return nullptr;
@@ -318,7 +318,7 @@ void GameModel::useAbility(int abilityID, const std::vector<std::string>& args) 
     if (abilityID < 1 || abilityID > static_cast<int>(abilities.size()))
         throw std::invalid_argument("useAbility: Invalid ability index, must be between 1-5.");
 
-    Ability* ability = abilities.at(abilityID - 1);
+    const auto& ability = abilities.at(abilityID - 1);
 
     if (ability->isUsed()) throw runtime_error("The ability in this slot has already been used.");
 
@@ -362,12 +362,12 @@ int GameModel::getCurrentTurn() const
 
 Player *GameModel::getCurrentPlayer() const
 {
-    return players[(currentTurn - 1) % players.size()];
+    return players[(currentTurn - 1) % players.size()].get();
 }
 
 // helper for link related abilities
 Link* GameModel::findLinkById(char linkId) const {
-    for (Player* player : players) {
+    for (const auto &player : players) {
         Link* link = player->getLink(linkId);
         if (link) return link;
     }
@@ -388,16 +388,16 @@ const std::vector<std::pair<int, int>>& GameModel::getChangedCells() const {
 
 int GameModel::getWinnerId() const {
     // 1. check if any player has 4+ data downloads
-    for (Player* player : players) {
+    for (const auto & player : players) {
         if (player->getDataDownloadCount() >= 4) {
             return player->getId();
         }
     }
 
     // 2. check if any player has all opponents with 4+ virus downloads
-    for (Player* candidate : players) {
+    for (const auto & candidate : players) {
         bool allOpponentsHave4Virus = true;
-        for (Player* opponent : players) {
+        for (const auto & opponent : players) {
             if (opponent == candidate) continue;
             if (opponent->getVirusDownloadCount() < 4) {
                 allOpponentsHave4Virus = false;
